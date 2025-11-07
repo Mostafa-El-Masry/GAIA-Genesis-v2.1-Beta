@@ -2,6 +2,8 @@
 
 import clsx from "clsx";
 import { useEffect, useMemo, useState } from "react";
+import type { LessonDetail } from "../data/lessons";
+import { lessonsByModuleId } from "../data/lessons";
 import type { Module as TrackModule } from "../data/tracks";
 import { tracks } from "../data/tracks";
 import { useTowerProgress } from "../lib/progress";
@@ -110,13 +112,14 @@ export default function Tower() {
     setActiveModuleId(null);
   }, [selectedTrackId]);
 
+  const [showSelectedPath, setShowSelectedPath] = useState(false);
+
   const handleSelectTrack = (trackId: string) => {
     setSelectedTrackId(trackId);
+    setShowSelectedPath(true);
     if (typeof window !== "undefined") {
       requestAnimationFrame(() => {
-        document
-          .getElementById("tower-track-detail")
-          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+        window.scrollTo({ top: 0, behavior: "smooth" });
       });
     }
   };
@@ -180,178 +183,223 @@ export default function Tower() {
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
         <div className="space-y-8">
-          <section className="rounded-3xl border gaia-border bg-white/80 p-5 shadow-sm">
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.35em] text-cyan-700/80">
-                  Skills Progress
-                </p>
-                <h3 className="text-2xl font-semibold">Follow the learning path</h3>
-                <p className="text-sm gaia-muted">
-                  Start the next subject only when the current one is complete—just
-                  like The Odin Project’s dashboard flow.
-                </p>
-              </div>
-              <div className="flex items-center gap-4">
-                <ProgressDonut value={overallPercent} size={86} />
-                <div className="text-xs uppercase tracking-[0.2em] text-cyan-700/70">
-                  Overall
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 space-y-4">
-              {trackSummaries.map((track) => (
-                <article
-                  key={track.id}
-                  id={`track-${track.id}`}
-                  className={clsx(
-                    "rounded-3xl border px-5 py-4 shadow-sm transition",
-                    selectedTrack?.id === track.id
-                      ? "border-cyan-400/80 bg-white ring-2 ring-cyan-200"
-                      : "gaia-border bg-white/70 hover:border-cyan-300/70"
-                  )}
-                >
-                  <div className="flex flex-col gap-5 lg:flex-row lg:items-center">
-                    <div className="flex flex-1 items-start gap-4">
-                      <div className="mt-1 flex h-14 w-14 items-center justify-center rounded-full border border-cyan-200 bg-cyan-50 text-xl font-semibold text-cyan-700">
-                        {track.title.slice(0, 1)}
-                      </div>
-                      <div>
-                        <p className="text-[0.6rem] uppercase tracking-[0.35em] text-cyan-700/70">
-                          Path
-                        </p>
-                        <h4 className="text-lg font-semibold">{track.title}</h4>
-                        <p className="text-sm gaia-muted">{track.description}</p>
-                        <div className="mt-2 flex flex-wrap gap-4 text-xs gaia-muted">
-                          <span>{track.modules.length} courses</span>
-                          <span>{track.totalLessons} lessons</span>
-                          <span>{track.totalProjects} projects</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-3 text-sm">
-                      <ProgressDonut value={track.percent} size={70} />
-                      <button
-                        type="button"
-                        onClick={() => handleSelectTrack(track.id)}
-                        className="rounded-full border border-cyan-500/60 px-4 py-1.5 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-500/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-400"
-                      >
-                        {track.nextAction}
-                      </button>
-                      <p className="text-xs gaia-muted">
-                        {track.unlockedCount}/{track.modules.length} unlocked
-                      </p>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
-
-          {selectedTrack ? (
-            <section
-              id="tower-track-detail"
-              className="rounded-3xl border gaia-border bg-white/90 p-5 shadow-sm"
-            >
-              <div className="flex flex-col gap-4">
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-cyan-700">
-                    Selected Path
-                  </span>
-                  <span className="text-sm font-semibold text-cyan-700">
-                    {selectedTrack.percent}% complete
-                  </span>
-                </div>
+          {!showSelectedPath && (
+            <section className="rounded-3xl border gaia-border bg-white/80 p-5 shadow-sm">
+              <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                 <div>
-                  <h3 className="text-2xl font-semibold">{selectedTrack.title}</h3>
-                  <p className="text-sm gaia-muted max-w-3xl">
-                    {selectedTrack.description}
+                  <p className="text-xs uppercase tracking-[0.35em] text-cyan-700/80">
+                    Skills Progress
+                  </p>
+                  <h3 className="text-2xl font-semibold">
+                    Follow the learning path
+                  </h3>
+                  <p className="text-sm gaia-muted">
+                    Start the next subject only when the current one is
+                    complete—just like The Odin Project's dashboard flow.
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-4 text-sm gaia-muted">
-                  <span>
-                    {selectedTrack.unlockedCount}/{selectedTrack.modules.length} courses unlocked
-                  </span>
-                  <span>{selectedTrack.totalLessons} lessons</span>
-                  <span>{selectedTrack.totalProjects} projects</span>
-                </div>
-                <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-cyan-100">
-                  <div
-                    className="h-full rounded-full bg-cyan-600 transition-all"
-                    style={{ width: `${selectedTrack.percent}%` }}
-                    aria-label={`${selectedTrack.percent}% of ${selectedTrack.title} complete`}
-                  />
+                <div className="flex items-center gap-4">
+                  <ProgressDonut value={overallPercent} size={86} />
+                  <div className="text-xs uppercase tracking-[0.2em] text-cyan-700/70">
+                    Overall
+                  </div>
                 </div>
               </div>
 
               <div className="mt-6 space-y-4">
-                {selectedTrack.modules.map((module, index) => {
-                  const moduleIsActive = activeModuleId === module.id;
-                  const openLabel = module.unlocked
-                    ? "Review course"
-                    : module.ready
-                    ? "Open course"
-                    : "Locked";
-
-                  return (
-                    <article
-                      key={module.id}
-                      id={`tower-module-${module.id}`}
-                      className={clsx(
-                        "rounded-2xl border bg-white/80 p-4 shadow-sm transition",
-                        moduleIsActive
-                          ? "border-cyan-400 ring-2 ring-cyan-200"
-                          : "gaia-border hover:border-cyan-200"
-                      )}
-                    >
-                      <div className="flex flex-col gap-4 md:flex-row md:items-center">
-                        <div className="flex-1">
-                          <ModuleStatusBadge status={module.status} order={index + 1} />
-                          <h4 className="mt-2 text-lg font-semibold">{module.title}</h4>
-                          <p className="text-sm gaia-muted">{module.summary}</p>
+                {trackSummaries.map((track) => (
+                  <article
+                    key={track.id}
+                    id={`track-${track.id}`}
+                    className={clsx(
+                      "rounded-3xl border px-5 py-4 shadow-sm transition",
+                      selectedTrack?.id === track.id
+                        ? "border-cyan-400/80 bg-white ring-2 ring-cyan-200"
+                        : "gaia-border bg-white/70 hover:border-cyan-300/70"
+                    )}
+                  >
+                    <div className="flex flex-col gap-5 lg:flex-row lg:items-center">
+                      <div className="flex flex-1 items-start gap-4">
+                        <div className="mt-1 flex h-14 w-14 items-center justify-center rounded-full border border-cyan-200 bg-cyan-50 text-xl font-semibold text-cyan-700">
+                          {track.title.slice(0, 1)}
                         </div>
-                        <div className="flex flex-col items-end gap-2 text-right text-xs gaia-muted">
-                          <div>{module.lessons} lessons</div>
-                          <div>{module.projects} projects</div>
-                          <div className="mt-1 flex flex-wrap justify-end gap-2">
-                            <button
-                              type="button"
-                              disabled={!module.ready && !module.unlocked}
-                              onClick={() => handleOpenCourse(module)}
-                              className={clsx(
-                                "rounded-full border px-3 py-1 text-sm font-semibold transition",
-                                module.ready || module.unlocked
-                                  ? "border-cyan-400 text-cyan-700 hover:bg-cyan-500/10"
-                                  : "cursor-not-allowed border-slate-200 text-slate-400"
-                              )}
-                            >
-                              {openLabel}
-                            </button>
-                            <button
-                              type="button"
-                              disabled={!module.ready && !module.unlocked}
-                              onClick={() => handleModuleToggle(module)}
-                              className={clsx(
-                                "rounded-full border px-3 py-1 text-sm font-semibold transition",
-                                module.unlocked
-                                  ? "border-emerald-300 text-emerald-700 hover:bg-emerald-500/10"
-                                  : module.ready
-                                  ? "border-amber-300 text-amber-700 hover:bg-amber-500/10"
-                                  : "cursor-not-allowed border-slate-200 text-slate-400"
-                              )}
-                            >
-                              {module.unlocked ? "Mark incomplete" : "Mark complete"}
-                            </button>
+                        <div>
+                          <p className="text-[0.6rem] uppercase tracking-[0.35em] text-cyan-700/70">
+                            Path
+                          </p>
+                          <h4 className="text-lg font-semibold">
+                            {track.title}
+                          </h4>
+                          <p className="text-sm gaia-muted">
+                            {track.description}
+                          </p>
+                          <div className="mt-2 flex flex-wrap gap-4 text-xs gaia-muted">
+                            <span>{track.modules.length} courses</span>
+                            <span>{track.totalLessons} lessons</span>
+                            <span>{track.totalProjects} projects</span>
                           </div>
                         </div>
                       </div>
-                    </article>
-                  );
-                })}
+                      <div className="flex flex-col items-end gap-3 text-sm">
+                        <ProgressDonut value={track.percent} size={70} />
+                        <button
+                          type="button"
+                          onClick={() => handleSelectTrack(track.id)}
+                          className="rounded-full border border-cyan-500/60 px-4 py-1.5 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-500/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-400"
+                        >
+                          {track.nextAction}
+                        </button>
+                        <p className="text-xs gaia-muted">
+                          {track.unlockedCount}/{track.modules.length} unlocked
+                        </p>
+                      </div>
+                    </div>
+                  </article>
+                ))}
               </div>
             </section>
-          ) : null}
+          )}
+
+          {showSelectedPath && selectedTrack && (
+            <>
+              <button
+                onClick={() => setShowSelectedPath(false)}
+                className="mb-4 flex items-center gap-2 text-sm text-cyan-600 hover:text-cyan-700"
+              >
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+                Back to paths
+              </button>
+              <section
+                id="tower-track-detail"
+                className="rounded-3xl border gaia-border bg-white/90 p-5 shadow-sm"
+              >
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-cyan-700">
+                      Selected Path
+                    </span>
+                    <span className="text-sm font-semibold text-cyan-700">
+                      {selectedTrack.percent}% complete
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-semibold">
+                      {selectedTrack.title}
+                    </h3>
+                    <p className="text-sm gaia-muted max-w-3xl">
+                      {selectedTrack.description}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-4 text-sm gaia-muted">
+                    <span>
+                      {selectedTrack.unlockedCount}/
+                      {selectedTrack.modules.length} courses unlocked
+                    </span>
+                    <span>{selectedTrack.totalLessons} lessons</span>
+                    <span>{selectedTrack.totalProjects} projects</span>
+                  </div>
+                  <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-cyan-100">
+                    <div
+                      className="h-full rounded-full bg-cyan-600 transition-all"
+                      style={{ width: `${selectedTrack.percent}%` }}
+                      aria-label={`${selectedTrack.percent}% of ${selectedTrack.title} complete`}
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-6 space-y-4">
+                  {selectedTrack.modules.map((module, index) => {
+                    const moduleIsActive = activeModuleId === module.id;
+                    const moduleLessons = lessonsByModuleId[module.id] ?? [];
+                    const openLabel = module.unlocked
+                      ? "Review course"
+                      : module.ready
+                      ? "Open course"
+                      : "Locked";
+
+                    return (
+                      <article
+                        key={module.id}
+                        id={`tower-module-${module.id}`}
+                        className={clsx(
+                          "rounded-2xl border bg-white/80 p-4 shadow-sm transition",
+                          moduleIsActive
+                            ? "border-cyan-400 ring-2 ring-cyan-200"
+                            : "gaia-border hover:border-cyan-200"
+                        )}
+                      >
+                        <div className="flex flex-col gap-4 md:flex-row md:items-center">
+                          <div className="flex-1">
+                            <ModuleStatusBadge
+                              status={module.status}
+                              order={index + 1}
+                            />
+                            <h4 className="mt-2 text-lg font-semibold">
+                              {module.title}
+                            </h4>
+                            <p className="text-sm gaia-muted">
+                              {module.summary}
+                            </p>
+                          </div>
+                          <div className="flex flex-col items-end gap-2 text-right text-xs gaia-muted">
+                            <div>{module.lessons} lessons</div>
+                            <div>{module.projects} projects</div>
+                            <div className="mt-1 flex flex-wrap justify-end gap-2">
+                              <button
+                                type="button"
+                                disabled={!module.ready && !module.unlocked}
+                                onClick={() => handleOpenCourse(module)}
+                                className={clsx(
+                                  "rounded-full border px-3 py-1 text-sm font-semibold transition",
+                                  module.ready || module.unlocked
+                                    ? "border-cyan-400 text-cyan-700 hover:bg-cyan-500/10"
+                                    : "cursor-not-allowed border-slate-200 text-slate-400"
+                                )}
+                              >
+                                {openLabel}
+                              </button>
+                              <button
+                                type="button"
+                                disabled={!module.ready && !module.unlocked}
+                                onClick={() => handleModuleToggle(module)}
+                                className={clsx(
+                                  "rounded-full border px-3 py-1 text-sm font-semibold transition",
+                                  module.unlocked
+                                    ? "border-emerald-300 text-emerald-700 hover:bg-emerald-500/10"
+                                    : module.ready
+                                    ? "border-amber-300 text-amber-700 hover:bg-amber-500/10"
+                                    : "cursor-not-allowed border-slate-200 text-slate-400"
+                                )}
+                              >
+                                {module.unlocked
+                                  ? "Mark incomplete"
+                                  : "Mark complete"}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                        {moduleIsActive ? (
+                          <LessonOutline lessons={moduleLessons} />
+                        ) : null}
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            </>
+          )}
         </div>
 
         <aside className="lg:block">
@@ -452,6 +500,89 @@ export default function Tower() {
         </aside>
       </div>
     </section>
+  );
+}
+
+function LessonOutline({ lessons }: { lessons: LessonDetail[] }) {
+  const count = lessons.length;
+
+  if (!count) {
+    return (
+      <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-white/70 p-4">
+        <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
+          Lesson outline
+        </p>
+        <p className="mt-2 text-xs gaia-muted">
+          Lesson details for this course are on the way. Track progress using the
+          buttons above in the meantime.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4 rounded-2xl border border-cyan-100 bg-cyan-50/40 p-4">
+      <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.3em] text-cyan-700/80">
+        <span>Lesson outline</span>
+        <span>{count} items</span>
+      </div>
+      <ol className="mt-3 space-y-3">
+        {lessons.map((lesson, index) => (
+          <li key={lesson.id} className="flex gap-3">
+            <div className="text-xs font-semibold text-cyan-600">
+              {(index + 1).toString().padStart(2, "0")}
+            </div>
+            <div className="flex flex-1 flex-col gap-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm font-semibold text-slate-900">
+                  {lesson.title}
+                </p>
+                <span
+                  className={clsx(
+                    "rounded-full border px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-[0.2em]",
+                    lesson.type === "project"
+                      ? "border-emerald-200 bg-white text-emerald-600"
+                      : "border-cyan-200 bg-white text-cyan-600"
+                  )}
+                >
+                  {lesson.type === "project" ? "Project" : "Lesson"}
+                </span>
+                {lesson.duration ? (
+                  <span className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                    {lesson.duration}
+                  </span>
+                ) : null}
+              </div>
+              <p className="text-xs gaia-muted">{lesson.summary}</p>
+              <div className="flex flex-wrap gap-2 text-xs">
+                {lesson.url ? (
+                  <a
+                    href={lesson.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 rounded-full border border-cyan-200 bg-white px-2 py-0.5 font-semibold text-cyan-600 transition hover:border-cyan-400 hover:text-cyan-700"
+                  >
+                    Open
+                    <span aria-hidden="true">↗</span>
+                  </a>
+                ) : null}
+                {lesson.resources?.map((resource) => (
+                  <a
+                    key={`${lesson.id}-${resource.label}`}
+                    href={resource.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 font-semibold text-slate-600 transition hover:border-slate-300"
+                  >
+                    {resource.label}
+                  </a>
+                ))}
+              </div>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
   );
 }
 

@@ -22,59 +22,84 @@ function modules(prefix: string, data: Array<Omit<Module, "id">>): Module[] {
 
 export const tracks: Track[] = [
   {
-    id: "html",
-    title: "HTML",
+    id: "html-css",
+    title: "HTML & CSS",
     description:
-      "Craft semantic documents, accessible landmarks, forms, and tables that give every page structure.",
-    modules: modules("html", [
+      "Master web fundamentals with semantic HTML and modern CSS. Build accessible, responsive, and beautifully styled web pages.",
+    modules: modules("html-css", [
+      // HTML Fundamentals
       {
-        title: "Semantic structure",
-        summary: "Landmarks, headings, lists, and copy that screen readers love.",
-        lessons: 18,
+        title: "Introduction to HTML",
+        summary: "Document structure, elements, and basic syntax",
+        lessons: 8,
+        projects: 1,
+      },
+      {
+        title: "Semantic Structure",
+        summary: "Semantic tags, landmarks, and accessibility",
+        lessons: 12,
+        projects: 1,
+      },
+      {
+        title: "Text & Lists",
+        summary: "Text content, headings, lists, and navigation",
+        lessons: 10,
+        projects: 1,
+      },
+      {
+        title: "Links & Media",
+        summary: "Hyperlinks, images, media elements with proper attributes",
+        lessons: 8,
+        projects: 1,
+      },
+      // CSS Fundamentals
+      {
+        title: "CSS Basics",
+        summary: "Selectors, properties, cascade, and specificity",
+        lessons: 15,
         projects: 2,
       },
       {
-        title: "Forms & inputs",
-        summary: "Labels, validation, and advanced controls for real data entry.",
+        title: "Box Model & Layout",
+        summary: "Box model, display types, positioning",
+        lessons: 12,
+        projects: 1,
+      },
+      {
+        title: "Flexbox Layout",
+        summary: "Flexible box layout for modern web design",
+        lessons: 10,
+        projects: 2,
+      },
+      {
+        title: "CSS Grid",
+        summary: "Grid layout system for complex interfaces",
+        lessons: 12,
+        projects: 2,
+      },
+      // Advanced Topics
+      {
+        title: "Forms & Validation",
+        summary: "Form controls, styling, and validation",
+        lessons: 15,
+        projects: 2,
+      },
+      {
+        title: "Responsive Design",
+        summary: "Media queries, flexible layouts, mobile-first approach",
         lessons: 12,
         projects: 2,
       },
       {
-        title: "Tables & data",
-        summary: "Accessible tables, figures, and micro layouts for structured info.",
-        lessons: 9,
+        title: "CSS Architecture",
+        summary: "Organization, methodology, and best practices",
+        lessons: 10,
         projects: 1,
       },
       {
-        title: "Media & embeds",
-        summary: "Images, video, and external embeds with fallbacks and captions.",
-        lessons: 7,
-        projects: 1,
-      },
-    ]),
-  },
-  {
-    id: "css",
-    title: "CSS",
-    description:
-      "Master cascade, layout systems, responsive design, and modern UI patterns with clean utility layers.",
-    modules: modules("css", [
-      {
-        title: "Layout systems",
-        summary: "Flexbox, grid, and responsive strategies.",
-        lessons: 20,
-        projects: 3,
-      },
-      {
-        title: "Design tokens",
-        summary: "Variables, theming, and utility layers.",
-        lessons: 14,
-        projects: 2,
-      },
-      {
-        title: "Animation & polish",
-        summary: "Transitions, keyframes, and high-fidelity UI states.",
-        lessons: 11,
+        title: "Animations & Effects",
+        summary: "Transforms, transitions, and animations",
+        lessons: 8,
         projects: 1,
       },
     ]),
@@ -140,7 +165,8 @@ export const tracks: Track[] = [
   {
     id: "git",
     title: "Git & CLI",
-    description: "Version control discipline and automation on the command line.",
+    description:
+      "Version control discipline and automation on the command line.",
     modules: modules("git", [
       {
         title: "Everyday Git",
