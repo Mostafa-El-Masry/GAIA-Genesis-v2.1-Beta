@@ -1,7 +1,7 @@
 "use client";
 
-import { concepts } from "../../../apollo/data/academy";
-import type { MicroConcept } from "../../../apollo/data/academy";
+import { concepts } from "../../apollo/(tabs)/academy/data/academy";
+import type { MicroConcept } from "../../apollo/(tabs)/academy/data/academy";
 
 export type BuildEntry = {
   conceptId: string;
