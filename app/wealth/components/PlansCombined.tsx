@@ -426,7 +426,6 @@ export function PlansTabView({ metrics }: PlansTabViewProps) {
           </div>
         </div>
 
-
         {selectedPlan === activePlan && (
           <div className="mt-4 rounded-2xl border border-cyan-100/70 bg-white/90 p-4 shadow-lg shadow-cyan-500/10">
             <div className="flex items-center justify-between gap-2">
@@ -618,7 +617,6 @@ export function PlansTabView({ metrics }: PlansTabViewProps) {
                       );
                     })
                   )}
-                  ,
                 </tbody>
               </table>
             </div>
