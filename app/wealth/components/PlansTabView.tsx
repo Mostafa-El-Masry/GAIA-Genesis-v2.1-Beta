@@ -36,6 +36,14 @@ interface PlansTabViewProps {
   metrics: FinancialMetrics;
 }
 
+const defaultStartDate = () => new Date().toISOString().slice(0, 10);
+const addYears = (dateStr: string, years: number) => {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  d.setFullYear(d.getFullYear() + years);
+  return d.toISOString().slice(0, 10);
+};
+
 export function PlansTabView({ metrics }: PlansTabViewProps) {
   const settings = loadSettings();
   const [selectedPlan, setSelectedPlan] = useState<"D" | "C" | "B" | "A">("D");
@@ -74,12 +82,12 @@ export function PlansTabView({ metrics }: PlansTabViewProps) {
 
   // handler to add investment from the Plan card UI
   const [showInvestmentForm, setShowInvestmentForm] = useState(false);
-  const [invName, setInvName] = useState("New Investment");
-  const [invPrincipal, setInvPrincipal] = useState<number | "">(100000);
-  const [invStartDate, setInvStartDate] = useState<string>(
-    new Date().toISOString().slice(0, 10)
+  const [invName, setInvName] = useState("Certificate");
+  const [invPrincipal, setInvPrincipal] = useState<number | "">(25000);
+  const [invStartDate, setInvStartDate] = useState<string>(defaultStartDate());
+  const [invEndDate, setInvEndDate] = useState<string>(
+    addYears(defaultStartDate(), 3)
   );
-  const [invEndDate, setInvEndDate] = useState<string>("");
   const [invApr, setInvApr] = useState<number>(
     settings.aprSchedule?.[0]?.aprPercent ?? 17
   );
@@ -89,10 +97,11 @@ export function PlansTabView({ metrics }: PlansTabViewProps) {
     // show the inline form
     setShowInvestmentForm(true);
     // initialize values
-    setInvName("New Investment");
-    setInvPrincipal(100000);
-    setInvStartDate(new Date().toISOString().slice(0, 10));
-    setInvEndDate("");
+    setInvName("Certificate");
+    setInvPrincipal(25000);
+    const start = defaultStartDate();
+    setInvStartDate(start);
+    setInvEndDate(addYears(start, 3));
     setInvApr(settings.aprSchedule?.[0]?.aprPercent ?? 17);
     setInvMonthlyRev(null);
   };
@@ -442,176 +451,235 @@ export function PlansTabView({ metrics }: PlansTabViewProps) {
             </div>
           </div>
         </div>
-        {/* Inline Investment Form (appears when Add Investment clicked) */}
-        {showInvestmentForm && (
-          <div className="mt-4 p-3 border rounded bg-muted/5">
-            <h4 className="text-sm font-medium mb-2">New Investment</h4>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="text-xs text-muted-foreground">Name</label>
-                <input
-                  className="w-full p-1 rounded border gaia-border"
-                  value={invName}
-                  onChange={(e) => setInvName(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground">
-                  Principal (EGP)
-                </label>
-                <input
-                  className="w-full p-1 rounded border gaia-border"
-                  type="number"
-                  value={String(invPrincipal)}
-                  onChange={(e) =>
-                    setInvPrincipal(
-                      e.target.value === "" ? "" : Number(e.target.value)
-                    )
-                  }
-                />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground">
-                  Start date
-                </label>
-                <input
-                  className="w-full p-1 rounded border gaia-border"
-                  type="date"
-                  value={invStartDate}
-                  onChange={(e) => setInvStartDate(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground">
-                  End date
-                </label>
-                <input
-                  className="w-full p-1 rounded border gaia-border"
-                  type="date"
-                  value={invEndDate}
-                  onChange={(e) => setInvEndDate(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground">APR (%)</label>
-                <input
-                  className="w-full p-1 rounded border gaia-border"
-                  type="number"
-                  step="0.1"
-                  value={invApr}
-                  onChange={(e) => {
-                    setInvApr(Number(e.target.value));
-                    setInvMonthlyRev(null);
-                  }}
-                />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground">
-                  Monthly revenue (EGP)
-                </label>
-                <input
-                  className="w-full p-1 rounded border gaia-border"
-                  type="number"
-                  step="0.01"
-                  value={
-                    invMonthlyRev ??
-                    Math.round(
-                      ((Number(invPrincipal) || 0) * (Number(invApr) / 100)) /
-                        12
-                    )
-                  }
-                  onChange={(e) =>
-                    setInvMonthlyRev(
-                      e.target.value === "" ? null : Number(e.target.value)
-                    )
-                  }
-                />
-              </div>
-            </div>
-            <div className="mt-3 flex gap-2">
-              <button
-                className="px-3 py-1 rounded bg-primary text-primary-foreground"
-                onClick={saveInvestmentFromForm}
-              >
-                Save
-              </button>
-              <button
-                className="px-3 py-1 rounded border gaia-border"
-                onClick={() => setShowInvestmentForm(false)}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
         {/* Existing investments for the current plan */}
-        {investments.length > 0 && selectedPlan === activePlan && (
-          <div className="mt-4 p-3 border rounded bg-muted/5">
-            <h4 className="text-sm font-medium mb-2">Investments</h4>
-            <div className="space-y-2">
-              {investments.map((inv: any) => (
-                <div
-                  key={inv.id}
-                  className="flex items-center justify-between gap-2 p-2 rounded border gaia-border bg-card"
-                >
-                  <div className="text-sm">
-                    <div className="font-medium">{inv.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      Principal: {Math.round(inv.amount || 0).toLocaleString()}{" "}
-                      EGP · APR: {inv.aprPercent ?? "—"}% · Monthly:{" "}
-                      {Math.round(
-                        inv.monthlyRevenue ??
-                          ((inv.amount || 0) * ((inv.aprPercent || 0) / 100)) /
+        {selectedPlan === activePlan && (
+          <div className="mt-4 rounded-2xl border border-cyan-100/70 bg-white/90 p-4 shadow-lg shadow-cyan-500/10">
+            <div className="flex items-center justify-between gap-2">
+              <h4 className="text-base font-semibold tracking-tight text-slate-900">
+                Certificates portfolio
+              </h4>
+              <span className="rounded-full bg-cyan-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-cyan-700">
+                {investments.length} active
+              </span>
+            </div>
+            <p className="text-xs text-slate-500">
+              Principal-heavy deposits converted into smooth monthly income.
+            </p>
+            <div className="mt-3 overflow-hidden rounded-2xl border border-cyan-100/80 ring-1 ring-cyan-500/15">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gradient-to-r from-cyan-600 to-sky-500 text-[0.65rem] uppercase tracking-[0.3em] text-white">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-semibold first:rounded-tl-2xl">
+                      Certificate
+                    </th>
+                    <th className="px-4 py-3 text-right font-semibold">
+                      Principal
+                    </th>
+                    <th className="px-4 py-3 text-right font-semibold">
+                      APR
+                    </th>
+                    <th className="px-4 py-3 text-right font-semibold">
+                      Monthly yield
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold">
+                      Start Date
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold">
+                      End Date
+                    </th>
+                    <th className="px-4 py-3 text-right font-semibold last:rounded-tr-2xl">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="text-slate-700">
+                  {showInvestmentForm && (
+                    <tr className="border-b border-cyan-100/80 bg-amber-50/80">
+                      <td className="px-4 py-3">
+                        <input
+                          className="w-full rounded-lg border border-amber-200 bg-white px-2 py-1 text-sm"
+                          value={invName}
+                          onChange={(e) => setInvName(e.target.value)}
+                          placeholder="Certificate name"
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <input
+                          type="number"
+                          className="w-full rounded-lg border border-amber-200 bg-white px-2 py-1 text-right text-sm font-mono"
+                          value={invPrincipal}
+                          onChange={(e) =>
+                            setInvPrincipal(
+                              e.target.value === "" ? "" : Number(e.target.value)
+                            )
+                          }
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <input
+                          type="number"
+                          className="w-full rounded-lg border border-amber-200 bg-white px-2 py-1 text-right text-sm font-mono"
+                          value={invApr}
+                          onChange={(e) => setInvApr(Number(e.target.value))}
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <input
+                          type="number"
+                          className="w-full rounded-lg border border-amber-200 bg-white px-2 py-1 text-right text-sm font-mono"
+                          value={
+                            invMonthlyRev === null ? "" : invMonthlyRev ?? ""
+                          }
+                          placeholder={(
+                            ((Number(invPrincipal) || 0) *
+                              ((Number(invApr) || 0) / 100)) /
                             12
-                      ).toLocaleString()}{" "}
-                      EGP
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {inv.startDate
-                        ? `Start: ${new Date(
-                            inv.startDate
-                          ).toLocaleDateString()}`
-                        : ""}
-                      {inv.endDate
-                        ? ` · End: ${new Date(
-                            inv.endDate
-                          ).toLocaleDateString()}`
-                        : ""}
-                    </div>
-                  </div>
-                  <div>
-                    <button
-                      onClick={() => removeInvestment(inv.id)}
-                      className="text-red-600 hover:text-red-800 px-2 py-1 rounded"
-                      title="Remove investment"
-                    >
-                      ×
-                    </button>
-                  </div>
-                </div>
-              ))}
+                          ).toFixed(0)}
+                          onChange={(e) =>
+                            setInvMonthlyRev(
+                              e.target.value === ""
+                                ? null
+                                : Number(e.target.value)
+                            )
+                          }
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-xs text-slate-600">
+                        <input
+                          type="date"
+                          className="w-full rounded-lg border border-amber-200 bg-white px-2 py-1 text-sm"
+                          value={invStartDate}
+                          onChange={(e) => {
+                            const next = e.target.value;
+                            setInvStartDate(next);
+                            setInvEndDate(addYears(next, 3));
+                          }}
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-xs text-slate-600">
+                        <input
+                          type="date"
+                          className="w-full rounded-lg border border-amber-200 bg-white px-2 py-1 text-sm"
+                          value={invEndDate}
+                          onChange={(e) => setInvEndDate(e.target.value)}
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-right space-x-2">
+                        <button
+                          className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                          onClick={saveInvestmentFromForm}
+                        >
+                          Save
+                        </button>
+                        <button
+                          className="inline-flex items-center rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
+                          onClick={() => setShowInvestmentForm(false)}
+                        >
+                          Cancel
+                        </button>
+                      </td>
+                    </tr>
+                  )}
+                  {investments.length === 0 && !showInvestmentForm ? (
+                    <tr>
+                      <td
+                        colSpan={7}
+                        className="px-4 py-6 text-center text-sm text-slate-500"
+                      >
+                        No certificates yet. Click “Add Investment” to begin.
+                      </td>
+                    </tr>
+                  ) : (
+                    investments.map((inv: any, idx: number) => {
+                      const stripe = idx % 2 === 0 ? "bg-white" : "bg-cyan-50/60";
+                      const monthly = Math.round(
+                        inv.monthlyRevenue ??
+                          ((inv.amount || 0) * ((inv.aprPercent || 0) / 100)) / 12
+                      ).toLocaleString();
+
+                    const principal = Math.round(inv.amount || 0).toLocaleString();
+                    const start = inv.startDate
+                      ? new Date(inv.startDate).toLocaleDateString()
+                      : "—";
+                    const end = inv.endDate
+                      ? new Date(inv.endDate).toLocaleDateString()
+                      : "—";
+                    return (
+                      <tr
+                        key={inv.id}
+                        className={`${stripe} border-b border-cyan-100/80 last:border-b-0 transition-colors hover:bg-cyan-100/70`}
+                      >
+                        <td className="px-4 py-3 font-medium text-slate-900">
+                          {inv.name}
+                        </td>
+                        <td className="px-4 py-3 text-right font-mono text-xs text-slate-600">
+                          {principal} EGP
+                        </td>
+                        <td className="px-4 py-3 text-right font-mono text-xs text-slate-600">
+                          {inv.aprPercent ?? "—"}%
+                        </td>
+                        <td className="px-4 py-3 text-right font-mono text-xs text-emerald-600">
+                          {monthly} EGP
+                        </td>
+                        <td className="px-4 py-3 text-xs text-slate-600">
+                          {start}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-slate-600">
+                          {end}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            onClick={() => removeInvestment(inv.id)}
+                            className="inline-flex items-center rounded-full border border-red-100 px-3 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50"
+                            title="Remove investment"
+                          >
+                            Remove
+                          </button>
+                        </td>
+                      </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
         {/* Savings trajectory for the active plan (stops deposits when target met) */}
         {selectedPlan === activePlan && (
-          <div className="mt-4 p-3 border rounded bg-muted/5">
-            <h4 className="text-sm font-medium mb-2">
+          <div className="mt-4 rounded-2xl border border-cyan-100/70 bg-white/90 p-4 shadow-lg shadow-cyan-500/10">
+            <h4 className="text-base font-semibold tracking-tight text-slate-900">
               Savings trajectory (to age 60)
             </h4>
-            <div className="overflow-auto rounded-lg">
-              <table className="w-full text-sm">
-                <thead className="gaia-panel-soft">
+            <p className="text-xs text-slate-500">
+              Each row represents a single month of deposits, growth, and net
+              worth.
+            </p>
+            <div className="mt-3 overflow-hidden rounded-2xl border border-cyan-100/80 ring-1 ring-cyan-500/15">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gradient-to-r from-cyan-600 to-sky-500 text-[0.65rem] uppercase tracking-[0.3em] text-white">
                   <tr>
-                    <th className="p-2 text-left">Month</th>
-                    <th className="p-2 text-left">Age</th>
-                    <th className="p-2 text-right">Deposited (month)</th>
-                    <th className="p-2 text-right">Monthly Interest</th>
-                    <th className="p-2 text-right">Active Principal</th>
-                    <th className="p-2 text-right">Net Worth</th>
+                    <th className="px-4 py-3 text-left font-semibold first:rounded-tl-2xl">
+                      Month
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold">
+                      Age
+                    </th>
+                    <th className="px-4 py-3 text-right font-semibold">
+                      Deposited
+                    </th>
+                    <th className="px-4 py-3 text-right font-semibold">
+                      Monthly Interest
+                    </th>
+                    <th className="px-4 py-3 text-right font-semibold">
+                      Active Principal
+                    </th>
+                    <th className="px-4 py-3 text-right font-semibold last:rounded-tr-2xl">
+                      Net Worth
+                    </th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="text-slate-700">
                   {(() => {
                     const simRes = simulateUntilMonthlyTarget(
                       selectedPlanData.title,
@@ -624,26 +692,35 @@ export function PlansTabView({ metrics }: PlansTabViewProps) {
                       },
                       selectedPlanData.targetEGP
                     );
-                    return (simRes.rows as MonthRow[]).map((r) => (
-                      <tr key={`${r.month}`} className="border-t gaia-border">
-                        <td className="p-2">{`${MONTH_NAMES[r.monthIndex]} ${
-                          r.year
-                        }`}</td>
-                        <td className="p-2">{Math.floor(r.age)}</td>
-                        <td className="p-2 text-right">
-                          {r.depositsThisMonth.toLocaleString()}
-                        </td>
-                        <td className="p-2 text-right">
-                          {r.monthlyInterest.toLocaleString()}
-                        </td>
-                        <td className="p-2 text-right">
-                          {r.activePrincipal.toLocaleString()}
-                        </td>
-                        <td className="p-2 text-right font-semibold">
-                          {r.netWorth.toLocaleString()}
-                        </td>
-                      </tr>
-                    ));
+                    return (simRes.rows as MonthRow[]).map((r, idx) => {
+                      const stripe =
+                        idx % 2 === 0 ? "bg-white" : "bg-cyan-50/60";
+                      return (
+                        <tr
+                          key={`${r.month}`}
+                          className={`${stripe} border-b border-cyan-100/80 last:border-b-0 transition-colors hover:bg-cyan-100/70`}
+                        >
+                          <td className="px-4 py-3 font-medium text-slate-900">
+                            {`${MONTH_NAMES[r.monthIndex]} ${r.year}`}
+                          </td>
+                          <td className="px-4 py-3 text-slate-600">
+                            {Math.floor(r.age)}
+                          </td>
+                          <td className="px-4 py-3 text-right font-mono text-xs text-slate-600">
+                            {r.depositsThisMonth.toLocaleString()}
+                          </td>
+                          <td className="px-4 py-3 text-right font-mono text-xs text-emerald-600">
+                            {r.monthlyInterest.toLocaleString()}
+                          </td>
+                          <td className="px-4 py-3 text-right font-mono text-xs">
+                            {r.activePrincipal.toLocaleString()}
+                          </td>
+                          <td className="px-4 py-3 text-right font-semibold text-slate-900">
+                            {r.netWorth.toLocaleString()}
+                          </td>
+                        </tr>
+                      );
+                    });
                   })()}
                 </tbody>
               </table>
@@ -666,46 +743,66 @@ export function PlansTabView({ metrics }: PlansTabViewProps) {
               )
                 return null;
               return (
-                <div className="mt-4">
-                  <h5 className="text-sm font-medium mb-2">
+                <div className="mt-6">
+                  <h5 className="text-sm font-semibold text-slate-900">
                     Post‑target trajectory (reinvest-only to age 60)
                   </h5>
-                  <div className="overflow-auto rounded-lg">
-                    <table className="w-full text-sm">
-                      <thead className="gaia-panel-soft">
+                  <div className="mt-2 overflow-hidden rounded-2xl border border-cyan-100/80 ring-1 ring-cyan-500/15">
+                    <table className="min-w-full text-sm">
+                      <thead className="bg-gradient-to-r from-slate-900 to-cyan-700 text-[0.65rem] uppercase tracking-[0.3em] text-white">
                         <tr>
-                          <th className="p-2 text-left">Month</th>
-                          <th className="p-2 text-left">Age</th>
-                          <th className="p-2 text-right">Monthly Interest</th>
-                          <th className="p-2 text-right">Active Principal</th>
-                          <th className="p-2 text-right">Cash</th>
-                          <th className="p-2 text-right">Net Worth</th>
+                          <th className="px-4 py-3 text-left font-semibold first:rounded-tl-2xl">
+                            Month
+                          </th>
+                          <th className="px-4 py-3 text-left font-semibold">
+                            Age
+                          </th>
+                          <th className="px-4 py-3 text-right font-semibold">
+                            Monthly Interest
+                          </th>
+                          <th className="px-4 py-3 text-right font-semibold">
+                            Active Principal
+                          </th>
+                          <th className="px-4 py-3 text-right font-semibold">
+                            Cash
+                          </th>
+                          <th className="px-4 py-3 text-right font-semibold last:rounded-tr-2xl">
+                            Net Worth
+                          </th>
                         </tr>
                       </thead>
-                      <tbody>
-                        {simRes.continuationYears.map((r: YearRow) => (
-                          <tr
-                            key={`${r.year}-cont`}
-                            className="border-t gaia-border"
-                          >
-                            <td className="p-2">{`Dec ${r.year}`}</td>
-                            <td className="p-2">{Math.floor(r.age)}</td>
-                            <td className="p-2 text-right">
-                              {r.monthlyInterestDec.toLocaleString()}
-                            </td>
-                            <td className="p-2 text-right">
-                              {r.activePrincipalEnd.toLocaleString()}
-                            </td>
-                            <td className="p-2 text-right">
-                              {r.cashEnd.toLocaleString()}
-                            </td>
-                            <td className="p-2 text-right font-semibold">
-                              {(
-                                r.activePrincipalEnd + r.cashEnd
-                              ).toLocaleString()}
-                            </td>
-                          </tr>
-                        ))}
+                      <tbody className="text-slate-700">
+                        {simRes.continuationYears.map((r: YearRow, idx) => {
+                          const stripe =
+                            idx % 2 === 0 ? "bg-slate-900/5" : "bg-white";
+                          return (
+                            <tr
+                              key={`${r.year}-cont`}
+                              className={`${stripe} border-b border-cyan-100/60 last:border-b-0 transition-colors hover:bg-cyan-100/60`}
+                            >
+                              <td className="px-4 py-3 font-medium text-slate-900">
+                                {`Dec ${r.year}`}
+                              </td>
+                              <td className="px-4 py-3 text-slate-600">
+                                {Math.floor(r.age)}
+                              </td>
+                              <td className="px-4 py-3 text-right font-mono text-xs text-emerald-600">
+                                {r.monthlyInterestDec.toLocaleString()}
+                              </td>
+                              <td className="px-4 py-3 text-right font-mono text-xs">
+                                {r.activePrincipalEnd.toLocaleString()}
+                              </td>
+                              <td className="px-4 py-3 text-right font-mono text-xs text-slate-600">
+                                {r.cashEnd.toLocaleString()}
+                              </td>
+                              <td className="px-4 py-3 text-right font-semibold text-slate-900">
+                                {(
+                                  r.activePrincipalEnd + r.cashEnd
+                                ).toLocaleString()}
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
