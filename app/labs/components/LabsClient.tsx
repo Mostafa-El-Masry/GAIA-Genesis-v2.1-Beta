@@ -19,10 +19,10 @@ export default function LabsClient() {
       refresh();
     }
     window.addEventListener("storage", onAnyChange);
-    window.addEventListener("gaia:citadel:progress", onAnyChange as any);
+    window.addEventListener("gaia:tower:progress", onAnyChange as any);
     return () => {
       window.removeEventListener("storage", onAnyChange);
-      window.removeEventListener("gaia:citadel:progress", onAnyChange as any);
+      window.removeEventListener("gaia:tower:progress", onAnyChange as any);
     };
   }, []);
 

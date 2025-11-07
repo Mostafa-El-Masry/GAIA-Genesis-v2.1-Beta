@@ -1,7 +1,7 @@
 'use client';
 
 import { tracks } from "../data/tracks";
-import { useCitadelProgress } from "../lib/progress";
+import { useTowerProgress } from "../lib/progress";
 import MiniMap from "./TowerMiniMap";
 
 /**
@@ -11,7 +11,7 @@ import MiniMap from "./TowerMiniMap";
  * - Each track has an anchor id for mini-map navigation
  */
 export default function Tower() {
-  const { isUnlocked, toggleNode, countUnlocked } = useCitadelProgress();
+  const { isUnlocked, toggleNode, countUnlocked } = useTowerProgress();
 
   function canUnlock(trackId: string, tier: 1 | 2 | 3 | 4 | 5) {
     if (tier === 1) return true;
@@ -39,7 +39,11 @@ export default function Tower() {
           const nextId = track.nodes.find((n) => !isUnlocked(n.id) && canUnlock(track.id, n.tier))?.id;
 
           return (
-            <div key={track.id} id={`track-${track.id}`} className="rounded-lg border gaia-border p-4 scroll-mt-20">
+            <div
+              key={track.id}
+              id={`track-${track.id}`}
+              className="rounded-lg border gaia-border p-4 scroll-mt-20 bg-[linear-gradient(135deg,rgba(34,211,238,0.06),transparent)] ring-1 ring-cyan-500/10 hover:ring-cyan-300/20 transition"
+            >
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="font-semibold">{track.title}</h3>
                 <span className="text-xs gaia-muted">
@@ -58,9 +62,17 @@ export default function Tower() {
                     "w-full rounded-md border p-3 text-left transition focus:outline-none",
                   ];
                   if (unlocked) {
-                    classes.push("gaia-node-unlocked");
+                    classes.push(
+                      "gaia-node-unlocked",
+                      "border-cyan-400/50 bg-cyan-500/10 shadow-[0_0_0_1px_rgba(34,211,238,0.25)]"
+                    );
                   } else if (unlockable) {
-                    classes.push("gaia-border", "gaia-hover-soft", "gaia-ring-soft");
+                    classes.push(
+                      "gaia-border",
+                      "gaia-hover-soft",
+                      "gaia-ring-soft",
+                      "hover:ring-1 hover:ring-cyan-400/40 hover:shadow-cyan-500/25 hover:bg-cyan-500/5"
+                    );
                     if (isNext) classes.push("animate-pulse");
                   } else {
                     classes.push("gaia-border", "gaia-muted", "cursor-not-allowed");

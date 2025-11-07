@@ -1,6 +1,6 @@
 'use client';
 
-import { useCitadelProgress } from "../lib/progress";
+import { useTowerProgress } from "../lib/progress";
 import { tracks } from "../data/tracks";
 
 /**
@@ -8,12 +8,12 @@ import { tracks } from "../data/tracks";
  * Each square represents a node; clicking any square in a track scrolls to that track's panel.
  */
 export default function MiniMap() {
-  const { isUnlocked } = useCitadelProgress();
+  const { isUnlocked } = useTowerProgress();
 
   return (
     <div className="hidden items-center gap-2 md:flex">
       <div className="text-xs gaia-muted">Mini-map</div>
-      <div className="grid grid-cols-5 gap-0.5 rounded border gaia-border p-1">
+      <div className="grid grid-cols-5 gap-0.5 rounded border gaia-border p-1 ring-1 ring-cyan-500/20">
         {tracks.map((t) =>
           t.nodes.map((n) => (
             <button
@@ -22,10 +22,10 @@ export default function MiniMap() {
                 const el = document.getElementById(`track-${t.id}`);
                 el?.scrollIntoView({ behavior: "smooth", block: "start" });
               }}
-              className="h-2 w-2 rounded focus:outline-none focus:ring focus:ring-[color:var(--gaia-border)] transition-colors"
+              className="h-2 w-2 rounded focus:outline-none focus:ring focus:ring-cyan-400/40 transition-colors shadow-[0_0_6px_rgba(34,211,238,.35)]"
               style={{
                 backgroundColor: isUnlocked(n.id)
-                  ? "color-mix(in srgb, var(--gaia-positive) 75%, var(--gaia-surface) 25%)"
+                  ? "rgba(34,211,238,0.85)"
                   : "color-mix(in srgb, var(--gaia-border) 70%, transparent)",
                 opacity: isUnlocked(n.id) ? 1 : 0.6,
               }}

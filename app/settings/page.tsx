@@ -6,6 +6,7 @@ import {
   type ButtonStyle,
   type SearchStyle,
 } from "@/app/DesignSystem/context/DesignProvider";
+import { exportJSON, importJSON, loadData } from "@/app/apollo/lib/store";
 import { THEMES, type Theme } from "@/app/DesignSystem/theme";
 import {
   resetViews,
@@ -57,7 +58,6 @@ type TabId = "appearance" | "gallery" | "permissions";
 const PERMISSION_LABELS: Record<PermissionKey, string> = {
   apollo: "Apollo",
   archives: "Archives",
-  citadel: "Citadel",
   classic: "Classic",
   dashboard: "Dashboard",
   eleuthia: "Eleuthia",
@@ -303,6 +303,21 @@ export default function SettingsPage() {
     }
   }, [autoTagging]);
 
+  const handleExportApollo = useCallback(() => {
+    const data = loadData();
+    exportJSON(data);
+  }, []);
+
+  const handleImportApollo = useCallback(() => {
+    importJSON((data) => {
+      try {
+        window.dispatchEvent(new CustomEvent("gaia:apollo:data", { detail: { data } }));
+      } catch {
+        // no-op if window not available
+      }
+    });
+  }, []);
+
   return (
     <PermissionGate permission="settings">
       <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-8">
@@ -382,6 +397,32 @@ export default function SettingsPage() {
                   </button>
                 ))}
               </div>
+            </section>
+
+            <section className="space-y-3 rounded-lg border gaia-border p-4">
+              <h2 className="font-medium">Apollo archives</h2>
+              <p className="text-sm gaia-muted">
+                Export a backup of your local Apollo notes or import a saved JSON file.
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleExportApollo}
+                  className="rounded border px-3 py-1 text-sm gaia-contrast"
+                >
+                  Export archive
+                </button>
+                <button
+                  type="button"
+                  onClick={handleImportApollo}
+                  className="rounded border px-3 py-1 text-sm gaia-border gaia-hover-soft"
+                >
+                  Import archive
+                </button>
+              </div>
+              <p className="text-xs gaia-muted">
+                Data stays on this device; imports overwrite your current local archive.
+              </p>
             </section>
           </>
         )}

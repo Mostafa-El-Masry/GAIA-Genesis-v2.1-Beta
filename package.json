@@ -13,6 +13,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.925.0",
     "@vercel/speed-insights": "^1.2.0",
+    "clsx": "^2.1.1",
     "next": "^16.0.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"

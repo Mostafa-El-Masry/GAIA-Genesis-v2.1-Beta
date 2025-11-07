@@ -28,13 +28,13 @@ export default function HomePage() {
   const links: NavLink[] = [
     { href: "/gallery", label: "Gallery", permission: "gallery" },
     { href: "/apollo", label: "Apollo", permission: "apollo" },
+    { href: "/apollo/tower", label: "Tower", permission: "apollo" },
     { href: "/timeline", label: "Timeline", permission: "timeline" },
     { href: "/health", label: "Health", permission: "health" },
     { href: "/wealth", label: "Wealth", permission: "wealth" },
     { href: "/labs", label: "Labs", permission: "labs" },
     { href: "/dashboard", label: "Dashboard", permission: "dashboard" },
     { href: "/Archives", label: "Archives", permission: "archives" },
-    { href: "/Citadel", label: "Citadel", permission: "citadel" },
     { href: "/settings", label: "Settings", permission: "settings" },
   ];
   const visibleLinks = links.filter((link) => Boolean(permissions[link.permission]));

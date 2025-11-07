@@ -6,7 +6,6 @@ import { normaliseEmail } from "./strings";
 const PERMISSION_KEYS = [
   "apollo",
   "archives",
-  "citadel",
   "classic",
   "dashboard",
   "eleuthia",

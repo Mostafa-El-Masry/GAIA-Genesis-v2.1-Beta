@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -92,15 +92,7 @@ export default function ArchiveSidebar({
 
   return (
     <aside className="gaia-surface flex h-full flex-col gap-5 rounded-3xl border gaia-border p-6 shadow-lg ring-1 ring-black/5">
-      <header className="flex items-center justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] gaia-muted">
-            Archives
-          </p>
-          <p className="gaia-strong text-lg font-semibold">
-            {current ? current.title : "No topics yet"}
-          </p>
-        </div>
+      <header className="flex items-center justify-end">
         {sectionId ? (
           <Link
             href={`/apollo/section/${sectionId}`}
@@ -185,3 +177,4 @@ export default function ArchiveSidebar({
     </aside>
   );
 }
+

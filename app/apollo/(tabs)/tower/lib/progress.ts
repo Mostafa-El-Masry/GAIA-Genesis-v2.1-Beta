@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useState } from "react";
 
 type Progress = Record<string, boolean>;
-const KEY = "gaia.citadel.progress";
+const KEY = "gaia.tower.progress";
 
 /**
  * Local-first progress store
  * - Zero-knowledge local storage of unlocked nodes
- * - Emits "gaia:citadel:progress" on change
+ * - Emits "gaia:tower:progress" on change
  */
 function read(): Progress {
   try {
@@ -25,7 +25,7 @@ function write(p: Progress) {
   } catch {}
 }
 
-export function useCitadelProgress() {
+export function useTowerProgress() {
   const [progress, setProgress] = useState<Progress>({});
 
   useEffect(() => {
@@ -49,7 +49,7 @@ export function useCitadelProgress() {
       const updated: Progress = { ...prev, [nodeId]: next ?? !prev[nodeId] };
       if (!updated[nodeId]) delete updated[nodeId];
       write(updated);
-      window.dispatchEvent(new CustomEvent("gaia:citadel:progress", { detail: { nodeId, unlocked: !!updated[nodeId] } }));
+      window.dispatchEvent(new CustomEvent("gaia:tower:progress", { detail: { nodeId, unlocked: !!updated[nodeId] } }));
       return updated;
     });
   }, []);

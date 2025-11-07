@@ -24,7 +24,7 @@ export default function Intro() {
   ];
   const more = [
     { href: "/Archives", label: "Archives" },
-    { href: "/Citadel", label: "Citadel" },
+    { href: "/apollo/academy", label: "Academy" },
     { href: "/media-tools", label: "Media Tools" },
     { href: "/settings", label: "Settings" },
   ];

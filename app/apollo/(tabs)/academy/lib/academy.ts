@@ -8,8 +8,8 @@ export type AcademyResult = {
   completedAt: number;
 };
 
-const RESULT_KEY = "gaia.citadel.academy.results";
-const BUILD_KEY = "gaia.citadel.academy.builds"; // simple note storage for 'build' step
+const RESULT_KEY = "gaia.apollo.academy.results";
+const BUILD_KEY = "gaia.apollo.academy.builds"; // simple note storage for 'build' step
 
 export function readResults(): AcademyResult[] {
   try {

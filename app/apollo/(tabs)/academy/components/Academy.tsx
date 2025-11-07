@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect } from "react";
 import Button from "@/app/DesignSystem/components/Button";
-import { useCitadelProgress } from "../lib/progress";
+import { useTowerProgress } from "../../tower/lib/progress";
 import { concepts } from "../data/academy";
 import { readBuildNote, writeBuildNote, writeResult } from "../lib/academy";
 import { listCustomConcepts } from "../lib/customConcepts";
@@ -14,7 +14,7 @@ import { listCustomConcepts } from "../lib/customConcepts";
 type Step = "choose" | "learn" | "quiz" | "build" | "done";
 
 export default function Academy() {
-  const { isUnlocked, toggleNode } = useCitadelProgress();
+  const { isUnlocked, toggleNode } = useTowerProgress();
 
   const [extras, setExtras] = useState<any[]>([]);
   useEffect(() => {

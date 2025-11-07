@@ -27,13 +27,16 @@ export function determineActivePlan(metrics: FinancialMetrics): Plan {
   };
   const planType = nextPlanType[stage.level];
   const targetAmount =
-    planType === "D"
-      ? 1000 // 1,000 EGP/month
-      : planType === "C"
-      ? 3000 // 3,000 EGP/month
-      : planType === "B"
-      ? 5000 // 5,000 EGP/month
-      : 10000; // 10,000 EGP/month for Plan A
+    Math.ceil(
+      (planType === "D"
+        ? 1000 // 1,000 EGP/month
+        : planType === "C"
+        ? 3000 // 3,000 EGP/month
+        : planType === "B"
+        ? 5000 // 5,000 EGP/month
+        : 10000) / // 10,000 EGP/month for Plan A
+        1000
+    ) * 1000; // Round up to nearest 1000
   // Use calculatePlanProgress to return the full Plan object (includes currentProgress/isComplete)
   return calculatePlanProgress(metrics, stage, planType as PlanType) as Plan;
 }
@@ -167,13 +170,16 @@ export function calculatePlanProgress(
 } {
   const plan = PLANS[planType];
   const targetAmount =
-    planType === "D"
-      ? 1000 // 1,000 EGP/month
-      : planType === "C"
-      ? 3000 // 3,000 EGP/month
-      : planType === "B"
-      ? 5000 // 5,000 EGP/month
-      : 10000; // 10,000 EGP/month for Plan A
+    Math.ceil(
+      (planType === "D"
+        ? 1000 // 1,000 EGP/month
+        : planType === "C"
+        ? 3000 // 3,000 EGP/month
+        : planType === "B"
+        ? 5000 // 5,000 EGP/month
+        : 10000) / // 10,000 EGP/month for Plan A
+        1000
+    ) * 1000; // Round up to nearest 1000
 
   return {
     ...plan,

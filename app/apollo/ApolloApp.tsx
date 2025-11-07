@@ -1,12 +1,11 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import AskPanel from "./components/AskPanel";
 import ArchiveSidebar from "./components/ArchiveSidebar";
-import SearchBox from "./components/SearchBox";
 import SectionEditor from "./components/SectionEditor";
 import SectionViewer from "./components/SectionViewer";
-import Toolbar from "./components/Toolbar";
+import AskPanel from "./components/AskPanel";
+import Tower from "./(tabs)/tower/components/Tower";
 import type { ApolloData, ApolloPrefs, Section } from "./lib/types";
 import {
   getSectionById,
@@ -16,7 +15,6 @@ import {
   replaceSection,
   saveData,
   savePrefs,
-  search,
 } from "./lib/store";
 
 const panelClasses =
@@ -28,7 +26,6 @@ export default function ApolloPage() {
   const [data, setData] = useState<ApolloData>({ topics: [] });
   const [prefs, setPrefs] = useState<ApolloPrefs>({});
   const [editing, setEditing] = useState(false);
-  const [query, setQuery] = useState("");
 
   const topic = useMemo(
     () => getTopicById(data, prefs.topicId),
@@ -45,9 +42,24 @@ export default function ApolloPage() {
     const storedPrefs = loadPrefs();
     setData(storedData);
     setPrefs(storedPrefs);
-    if (storedPrefs.query) {
-      setQuery(storedPrefs.query);
+  }, []);
+
+  useEffect(() => {
+    function refreshFromStorage(event?: StorageEvent) {
+      if (event && event.key && event.key !== "gaia_apollo_v1_notes") return;
+      setData(loadData());
     }
+
+    function onCustom() {
+      refreshFromStorage();
+    }
+
+    window.addEventListener("storage", refreshFromStorage);
+    window.addEventListener("gaia:apollo:data", onCustom as EventListener);
+    return () => {
+      window.removeEventListener("storage", refreshFromStorage);
+      window.removeEventListener("gaia:apollo:data", onCustom as EventListener);
+    };
   }, []);
 
   const commitPrefs = useCallback((partial: Partial<ApolloPrefs>) => {
@@ -68,6 +80,25 @@ export default function ApolloPage() {
     [data]
   );
 
+  const handleDeleteActiveSection = useCallback(() => {
+    if (!section || !prefs.topicId) return;
+    const ok = window.confirm(`Delete section "${section.heading}"? This cannot be undone.`);
+    if (!ok) return;
+    setData((prev) => {
+      const next = {
+        ...prev,
+        topics: prev.topics.map((t) =>
+          t.id === prefs.topicId ? { ...t, sections: t.sections.filter((s) => s.id !== section.id) } : t
+        ),
+      } as typeof prev;
+      saveData(next as any);
+      return next;
+    });
+    // Clear active selection
+    commitPrefs({ sectionId: undefined });
+    setEditing(false);
+  }, [section, prefs.topicId, commitPrefs]);
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
@@ -87,138 +118,68 @@ export default function ApolloPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, [editing, handleSave, section]);
 
-  const results = useMemo(() => {
-    return query ? search(data, query) : [];
-  }, [data, query]);
-
   return (
     <main className="min-h-screen gaia-surface-soft">
-      <div className="mx-auto flex max-w-7xl flex-col gap-8 px-4 py-8 lg:flex-row-reverse">
-        <div className="w-full shrink-0 lg:w-80">
-          <ArchiveSidebar
-            data={data}
-            topicId={prefs.topicId}
-            setTopicId={(id) => commitPrefs({ topicId: id })}
-            sectionId={prefs.sectionId}
-            setSectionId={(id) => commitPrefs({ sectionId: id })}
-          />
-        </div>
-
-        <div className="flex-1 space-y-6">
-          <div className="flex flex-col gap-4 border-b gaia-border pb-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.35em] gaia-muted">
-                Apollo archives
-              </p>
-              <h1 className="gaia-strong text-3xl font-bold tracking-tight">
-                {topic ? `${topic.title}` : "Choose a topic"}
-              </h1>
-            </div>
-            <div className="w-full sm:max-w-sm">
-              <SearchBox
-                value={query}
-                onChange={(value) => {
-                  setQuery(value);
-                  commitPrefs({ query: value });
-                }}
-              />
-            </div>
+      <div className="mx-auto max-w-7xl space-y-8 px-4 py-8">
+        <div className="space-y-6">
+          <div className="border-b gaia-border pb-6">
+            <h1 className="gaia-strong text-5xl sm:text-6xl font-extrabold tracking-tight">APOLLO</h1>
           </div>
 
-          <Toolbar onNewSection={() => setEditing(true)} />
 
-          <div className="grid gap-6 xl:grid-cols-2">
+          <div className="flex flex-col gap-6">
             <div className={panelClasses}>
-              <AskPanel
-                onChange={(updated) => {
-                  setData(updated);
-                }}
-              />
+              <Tower />
             </div>
 
-            <div className={`${panelClasses} flex flex-col gap-4`}>
-              {section ? (
-                <>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.3em] gaia-muted">
-                        Active section
-                      </p>
-                      <h2 className="gaia-strong text-2xl font-semibold">
-                        {section.heading}
-                      </h2>
-                    </div>
-                    <div className="text-xs gaia-muted">
-                      {new Date(section.editedAt).toLocaleString()}
-                    </div>
-                    <div className="ml-auto">
-                      <button
-                        className={subtleButton}
-                        onClick={() => setEditing((prev) => !prev)}
-                      >
-                        {editing ? "Close editor" : "Edit"}
-                      </button>
-                    </div>
-                  </div>
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className={panelClasses}>
+                <AskPanel onChange={(updated) => setData(updated)} />
+              </div>
 
-                  {editing ? (
-                    <SectionEditor
-                      section={section}
-                      onSave={(text) => handleSave(section, text)}
-                    />
-                  ) : (
-                    <SectionViewer section={section} />
-                  )}
-                </>
-              ) : (
-                <div className="flex min-h-[220px] items-center justify-center rounded-2xl border border-dashed gaia-border gaia-surface-soft text-center text-sm gaia-muted">
-                  Select a section from the archives or paste a response from
-                  the Ask panel.
-                </div>
-              )}
+              <div className={`${panelClasses} ${section ? "flex flex-col gap-4" : ""}`}>
+                {section ? (
+                  <>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.3em] gaia-muted">Active section</p>
+                        <h2 className="gaia-strong text-2xl font-semibold">{section.heading}</h2>
+                      </div>
+                      <div className="text-xs gaia-muted">{new Date(section.editedAt).toLocaleString()}</div>
+                      <div className="ml-auto">
+                        <button className={subtleButton} onClick={() => setEditing((prev) => !prev)}>
+                          {editing ? "Close editor" : "Edit"}
+                        </button>
+                        <button className={`${subtleButton} ml-2`} onClick={handleDeleteActiveSection}>
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+
+                    {editing ? (
+                      <SectionEditor section={section} onSave={(text) => handleSave(section, text)} />
+                    ) : (
+                      <SectionViewer section={section} />
+                    )}
+                  </>
+                ) : (
+                  <ArchiveSidebar
+                    data={data}
+                    topicId={prefs.topicId}
+                    setTopicId={(id) => commitPrefs({ topicId: id })}
+                    sectionId={prefs.sectionId}
+                    setSectionId={(id) => commitPrefs({ sectionId: id })}
+                  />
+                )}
+              </div>
             </div>
           </div>
-
-          {results.length > 0 && (
-            <div className={panelClasses}>
-              <div className="mb-3 flex items-center justify-between gaia-strong">
-                <h3 className="text-lg font-semibold">Search results</h3>
-                <span className="text-sm gaia-muted">
-                  {results.length} hits
-                </span>
-              </div>
-              <div className="space-y-2">
-                {results.map((result) => (
-                  <button
-                    key={result.sectionId}
-                    className="gaia-surface w-full rounded-2xl border gaia-border px-4 py-3 text-left shadow-sm transition hover:shadow"
-                    onClick={() => {
-                      const matchingTopic = data.topics.find((item) =>
-                        item.sections.some(
-                          (entry) => entry.id === result.sectionId
-                        )
-                      );
-
-                      commitPrefs({
-                        topicId: matchingTopic?.id,
-                        sectionId: result.sectionId,
-                      });
-                      setQuery("");
-                    }}
-                  >
-                    <div className="font-semibold gaia-strong">
-                      {result.topic} - {result.heading}
-                    </div>
-                    <div className="text-sm gaia-muted">
-                      {result.snippet}...
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
+
+        
       </div>
     </main>
   );
 }
+
+

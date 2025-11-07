@@ -22,8 +22,8 @@ export default function Active() {
 
   useEffect(() => {
     function load() {
-      setProgress(readJSON("gaia.citadel.progress", {}));
-      setResults(readJSON<Result[]>("gaia.citadel.academy.results", []));
+      setProgress(readJSON("gaia.tower.progress", {}));
+      setResults(readJSON<Result[]>("gaia.apollo.academy.results", []));
       setVault(hasVault());
       try {
         setBuildCount(listBuilds().length);
@@ -34,10 +34,10 @@ export default function Active() {
     load();
     function onAny() { load(); }
     window.addEventListener("storage", onAny);
-    window.addEventListener("gaia:citadel:progress", onAny as any);
+    window.addEventListener("gaia:tower:progress", onAny as any);
     return () => {
       window.removeEventListener("storage", onAny);
-      window.removeEventListener("gaia:citadel:progress", onAny as any);
+      window.removeEventListener("gaia:tower:progress", onAny as any);
     };
   }, []);
 
@@ -49,13 +49,13 @@ export default function Active() {
       <h2 className="text-lg font-medium">Active</h2>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Link href="/Citadel" className="rounded-lg border gaia-border p-4 transition gaia-hover-soft">
-          <div className="text-xs gaia-muted">Citadel</div>
+        <Link href="/apollo/tower" className="rounded-lg border gaia-border p-4 transition gaia-hover-soft">
+          <div className="text-xs gaia-muted">Tower</div>
           <div className="mt-1 text-3xl font-semibold">{unlocked}</div>
           <div className="text-xs gaia-muted">nodes unlocked</div>
         </Link>
 
-        <Link href="/Citadel" className="rounded-lg border gaia-border p-4 transition gaia-hover-soft">
+        <Link href="/apollo/academy" className="rounded-lg border gaia-border p-4 transition gaia-hover-soft">
           <div className="text-xs gaia-muted">Last Academy score</div>
           <div className="mt-1 text-3xl font-semibold">
             {last ? `${last.score}/${last.total}` : "—"}

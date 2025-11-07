@@ -13,13 +13,17 @@ import {
 type ChatMessage = { role: 'user' | 'assistant'; content: string };
 
 const fieldStyles =
-  'gaia-input w-full rounded-2xl px-4 py-2 text-sm font-medium shadow-sm placeholder:gaia-muted focus:outline-none focus:ring-2 focus:ring-black/10';
+  'gaia-input rounded-2xl px-4 py-2 text-sm font-medium shadow-sm placeholder:gaia-muted focus:outline-none focus:ring-2 focus:ring-black/10';
 const primaryButton =
   'inline-flex items-center justify-center rounded-2xl border border-transparent bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-500 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-sky-600 disabled:cursor-not-allowed disabled:gaia-muted';
 const subtleButton =
   'inline-flex items-center justify-center rounded-2xl border gaia-border gaia-surface px-4 py-2 text-sm font-semibold shadow-sm transition hover:shadow focus:outline-none focus:ring-2 focus:ring-black/10 disabled:gaia-muted';
 
-export default function AskPanel({ onChange }: { onChange: (d: ApolloData) => void }) {
+type AskPanelProps = {
+  onChange?: (d: ApolloData) => void;
+};
+
+export default function AskPanel({ onChange }: AskPanelProps) {
   const [data, setData] = useState<ApolloData>({ topics: [] });
   const [topic, setTopic] = useState('HTML');
   const [section, setSection] = useState('Basics');
@@ -95,7 +99,14 @@ export default function AskPanel({ onChange }: { onChange: (d: ApolloData) => vo
     appendToSection(s, selection);
     saveData(freshData);
     setData(freshData);
-    onChange(freshData);
+    onChange?.(freshData);
+    try {
+      window.dispatchEvent(
+        new CustomEvent("gaia:apollo:data", { detail: { data: freshData } })
+      );
+    } catch {
+      // ignore if window is unavailable
+    }
     setError(null);
   }
 
@@ -121,13 +132,13 @@ export default function AskPanel({ onChange }: { onChange: (d: ApolloData) => vo
     <div className='space-y-4'>
       <div className='grid gap-3 md:grid-cols-[1fr,1fr,auto]'>
         <input
-          className={fieldStyles}
+          className={`${fieldStyles} w-full`}
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
           placeholder='Topic (e.g., HTML)'
         />
         <input
-          className={fieldStyles}
+          className={`${fieldStyles} w-full`}
           value={section}
           onChange={(e) => setSection(e.target.value)}
           placeholder='Section (H2, e.g., Inline vs Block)'
@@ -142,14 +153,18 @@ export default function AskPanel({ onChange }: { onChange: (d: ApolloData) => vo
         </button>
       </div>
 
-      <div className='grid gap-3 md:grid-cols-[1fr,auto]'>
+      <div className='flex w-full items-center gap-3'>
         <input
-          className={fieldStyles}
+          className={`${fieldStyles} flex-1 min-w-0`}
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           placeholder='Ask ChatGPT something...'
         />
-        <button className={primaryButton} onClick={askModel} disabled={loading || !trimmedPrompt}>
+        <button
+          className={`${primaryButton} flex-shrink-0 whitespace-nowrap`}
+          onClick={askModel}
+          disabled={loading || !trimmedPrompt}
+        >
           {loading ? 'Asking...' : 'Ask ChatGPT'}
         </button>
       </div>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Plan, FinancialMetrics, PLANS } from "../lib/wealthLevels";
-import { MonthRow } from "../lib/types";
+import { MonthRow, YearRow } from "../lib/types";
 
 const MONTH_NAMES = [
   "Jan",
@@ -661,8 +661,8 @@ export function PlansTabView({ metrics }: PlansTabViewProps) {
                 selectedPlanData.targetEGP
               );
               if (
-                !simRes.continuationRows ||
-                simRes.continuationRows.length === 0
+                !simRes.continuationYears ||
+                simRes.continuationYears.length === 0
               )
                 return null;
               return (
@@ -683,26 +683,26 @@ export function PlansTabView({ metrics }: PlansTabViewProps) {
                         </tr>
                       </thead>
                       <tbody>
-                        {simRes.continuationRows.map((r) => (
+                        {simRes.continuationYears.map((r: YearRow) => (
                           <tr
-                            key={`${r.month}-cont`}
+                            key={`${r.year}-cont`}
                             className="border-t gaia-border"
                           >
-                            <td className="p-2">{`${
-                              MONTH_NAMES[r.monthIndex]
-                            } ${r.year}`}</td>
+                            <td className="p-2">{`Dec ${r.year}`}</td>
                             <td className="p-2">{Math.floor(r.age)}</td>
                             <td className="p-2 text-right">
-                              {r.monthlyInterest.toLocaleString()}
+                              {r.monthlyInterestDec.toLocaleString()}
                             </td>
                             <td className="p-2 text-right">
-                              {r.activePrincipal.toLocaleString()}
+                              {r.activePrincipalEnd.toLocaleString()}
                             </td>
                             <td className="p-2 text-right">
-                              {r.cash.toLocaleString()}
+                              {r.cashEnd.toLocaleString()}
                             </td>
                             <td className="p-2 text-right font-semibold">
-                              {r.netWorth.toLocaleString()}
+                              {(
+                                r.activePrincipalEnd + r.cashEnd
+                              ).toLocaleString()}
                             </td>
                           </tr>
                         ))}

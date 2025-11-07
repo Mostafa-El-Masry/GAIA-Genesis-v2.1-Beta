@@ -3,7 +3,8 @@ export type SiteEntry = { path: string; title: string; group?: string; note?: st
 export const routes: SiteEntry[] = [
   { path: "/", title: "Home" },
   { path: "/dashboard", title: "Dashboard" },
-  { path: "/Citadel", title: "Citadel (Tower + Academy)" },
+  { path: "/apollo/tower", title: "Apollo Tower" },
+  { path: "/apollo/academy", title: "Apollo Academy" },
   { path: "/Labs", title: "Labs (builds)" },
   { path: "/ELEUTHIA", title: "ELEUTHIA (vault)" },
   { path: "/ELEUTHIA/Backups", title: "Backups" },

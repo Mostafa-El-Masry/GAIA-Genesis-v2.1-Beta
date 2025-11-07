@@ -1,6 +1,6 @@
 'use client';
 
-import { concepts } from "@/app/Citadel/data/academy";
+import { concepts } from "@/app/apollo/(tabs)/academy/data/academy";
 
 export type BuildEntry = {
   conceptId: string;
@@ -15,8 +15,8 @@ export type BuildEntry = {
   completedAt?: number;
 };
 
-const RESULT_KEY = "gaia.citadel.academy.results";
-const BUILD_KEY = "gaia.citadel.academy.builds";
+const RESULT_KEY = "gaia.apollo.academy.results";
+const BUILD_KEY = "gaia.apollo.academy.builds";
 
 function readResults(): Array<{ conceptId: string; score: number; total: number; completedAt: number; notes?: string; }> {
   try {
