@@ -40,8 +40,26 @@ export default function LessonReader({ lessons }: LessonReaderProps) {
     lessons[0]?.id ?? null
   );
   const [content, setContent] = useState<Record<string, LessonContentState>>(
-    {}
+    () =>
+      lessons.reduce((map, lesson) => {
+        if (typeof lesson.body === "string") {
+          map[lesson.id] = { status: "ready", body: lesson.body };
+        }
+        return map;
+      }, {} as Record<string, LessonContentState>)
   );
+
+  useEffect(() => {
+    setContent((prev) => {
+      const next = { ...prev };
+      lessons.forEach((lesson) => {
+        if (typeof lesson.body === "string" && !next[lesson.id]) {
+          next[lesson.id] = { status: "ready", body: lesson.body };
+        }
+      });
+      return next;
+    });
+  }, [lessons]);
 
   const activeLesson = useMemo(
     () => lessons.find((lesson) => lesson.id === activeLessonId) ?? null,
@@ -53,6 +71,20 @@ export default function LessonReader({ lessons }: LessonReaderProps) {
 
   useEffect(() => {
     if (!activeLessonId || !activeLesson) return;
+    if (typeof activeLesson.body === "string") {
+      setContent((prev) => {
+        const existing = prev[activeLessonId];
+        if (existing && existing.status === "ready") return prev;
+        return {
+          ...prev,
+          [activeLessonId]: {
+            status: "ready",
+            body: activeLesson.body as string,
+          },
+        };
+      });
+      return;
+    }
 
     if (!rawUrl) {
       setContent((prev) => {

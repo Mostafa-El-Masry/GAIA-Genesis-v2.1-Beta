@@ -10,8 +10,11 @@ type PageProps = {
   params: { moduleId: string };
 };
 
-export function generateMetadata({ params }: PageProps): Metadata {
-  const moduleKey = normalizeModuleId(params.moduleId);
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { moduleId } = await params;
+  const moduleKey = normalizeModuleId(moduleId);
   const meta = findModule(moduleKey);
   if (!meta) {
     return {
@@ -24,8 +27,9 @@ export function generateMetadata({ params }: PageProps): Metadata {
   };
 }
 
-export default function ModuleLessonsPage({ params }: PageProps) {
-  const moduleKey = normalizeModuleId(params.moduleId);
+export default async function ModuleLessonsPage({ params }: PageProps) {
+  const { moduleId } = await params;
+  const moduleKey = normalizeModuleId(moduleId);
   const meta = findModule(moduleKey);
   if (!meta) notFound();
   const lessons = lessonsByModuleId[moduleKey] ?? [];
@@ -86,13 +90,11 @@ export default function ModuleLessonsPage({ params }: PageProps) {
   );
 }
 
-function findModule(moduleId: string):
-  | {
-      track: Track;
-      module: Module;
-      order: number;
-    }
-  | null {
+function findModule(moduleId: string): {
+  track: Track;
+  module: Module;
+  order: number;
+} | null {
   if (!moduleId) return null;
   for (const track of tracks) {
     const index = track.modules.findIndex((mod) => mod.id === moduleId);

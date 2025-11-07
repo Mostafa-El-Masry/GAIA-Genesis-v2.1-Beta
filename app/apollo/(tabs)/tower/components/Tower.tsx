@@ -143,7 +143,9 @@ export default function Tower() {
         })
       );
     }
-    router.push(`/apollo/tower/${module.id}`);
+    // Normalize the module ID before navigation to match the page's normalization
+    const normalizedId = module.id.trim().replace(/\s+/g, "-").toLowerCase();
+    router.push(`/apollo/tower/${encodeURIComponent(normalizedId)}`);
   };
 
   const handleModuleToggle = (module: ModuleState) => {

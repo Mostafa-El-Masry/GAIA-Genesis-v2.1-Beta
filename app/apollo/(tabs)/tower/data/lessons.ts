@@ -11,9 +11,12 @@ export type LessonDetail = {
   duration?: string;
   url?: string;
   resources?: LessonResource[];
+  body?: string;
 };
 
 export type LessonCatalog = Record<string, LessonDetail[]>;
+
+import { lessonBodies } from "./lessonBodies";
 
 const CURRICULUM = "https://github.com/TheOdinProject/curriculum/blob/main";
 
@@ -30,6 +33,7 @@ export const htmlLessons: LessonCatalog = {
       url: resourceLink(
         "foundations/html_css/html-foundations/intro-to-html-css.md"
       ),
+      body: lessonBodies["html-css-m1-l1"],
     },
     {
       id: "html-css-m1-l2",
@@ -40,6 +44,7 @@ export const htmlLessons: LessonCatalog = {
       url: resourceLink(
         "foundations/html_css/html-foundations/elements-and-tags.md"
       ),
+      body: lessonBodies["html-css-m1-l2"],
     },
     {
       id: "html-css-m1-l3",
@@ -50,6 +55,7 @@ export const htmlLessons: LessonCatalog = {
       url: resourceLink(
         "foundations/html_css/html-foundations/html-boilerplate.md"
       ),
+      body: lessonBodies["html-css-m1-l3"],
     },
     {
       id: "html-css-m1-l4",
@@ -60,6 +66,7 @@ export const htmlLessons: LessonCatalog = {
       url: resourceLink(
         "foundations/html_css/css-foundations/inspecting-html-and-css.md"
       ),
+      body: lessonBodies["html-css-m1-l4"],
     },
     {
       id: "html-css-m1-l5",
@@ -68,6 +75,7 @@ export const htmlLessons: LessonCatalog = {
         "Wire up meta tags, favicons, and social previews so your documents describe themselves before any body content loads.",
       duration: "12 min",
       url: "https://developer.mozilla.org/docs/Learn/HTML/Introduction_to_HTML/The_head_metadata_in_HTML",
+      body: lessonBodies["html-css-m1-l5"],
     },
     {
       id: "html-css-m1-l6",
@@ -76,6 +84,7 @@ export const htmlLessons: LessonCatalog = {
         "Tour the most useful global attributes, learn when to reach for ARIA roles, and avoid smells like empty anchors.",
       duration: "12 min",
       url: "https://developer.mozilla.org/docs/Web/HTML/Global_attributes",
+      body: lessonBodies["html-css-m1-l6"],
     },
     {
       id: "html-css-m1-l7",
@@ -86,6 +95,7 @@ export const htmlLessons: LessonCatalog = {
       url: resourceLink(
         "intermediate_html_css/intermediate_html_concepts/emmet.md"
       ),
+      body: lessonBodies["html-css-m1-l7"],
     },
     {
       id: "html-css-m1-l8",
@@ -97,6 +107,7 @@ export const htmlLessons: LessonCatalog = {
       url: resourceLink(
         "foundations/html_css/html-foundations/project-recipes.md"
       ),
+      body: lessonBodies["html-css-m1-l8"],
     },
   ],
   "html-css-m2": [
@@ -116,9 +127,7 @@ export const htmlLessons: LessonCatalog = {
       summary:
         "Map content to the right landmark elements so screen readers, search engines, and teammates get structure for free.",
       duration: "18 min",
-      url: resourceLink(
-        "advanced_html_css/accessibility/semantic_html.md"
-      ),
+      url: resourceLink("advanced_html_css/accessibility/semantic_html.md"),
     },
     {
       id: "html-css-m2-l3",
@@ -126,9 +135,7 @@ export const htmlLessons: LessonCatalog = {
       summary:
         "Author headings, buttons, and link text that make sense out of context and reinforce the document outline.",
       duration: "14 min",
-      url: resourceLink(
-        "advanced_html_css/accessibility/meaningful_text.md"
-      ),
+      url: resourceLink("advanced_html_css/accessibility/meaningful_text.md"),
     },
     {
       id: "html-css-m2-l4",
@@ -297,9 +304,7 @@ export const htmlLessons: LessonCatalog = {
       summary:
         "Connect selectors to declarations, understand how the cascade resolves conflicts, and scope your first styles.",
       duration: "15 min",
-      url: resourceLink(
-        "foundations/html_css/css-foundations/intro-to-css.md"
-      ),
+      url: resourceLink("foundations/html_css/css-foundations/intro-to-css.md"),
     },
     {
       id: "html-css-m5-l2",
@@ -307,9 +312,7 @@ export const htmlLessons: LessonCatalog = {
       summary:
         "Trace how specificity, source order, and !important interact so you fix bugs without hacks.",
       duration: "15 min",
-      url: resourceLink(
-        "foundations/html_css/css-foundations/the-cascade.md"
-      ),
+      url: resourceLink("foundations/html_css/css-foundations/the-cascade.md"),
     },
     {
       id: "html-css-m5-l3",
@@ -439,9 +442,7 @@ export const htmlLessons: LessonCatalog = {
       summary:
         "Compose gaps, wrapping, and alignment utilities for navbars, dashboards, and hero layouts.",
       duration: "14 min",
-      url: resourceLink(
-        "foundations/html_css/flexbox/flexbox-alignment.md"
-      ),
+      url: resourceLink("foundations/html_css/flexbox/flexbox-alignment.md"),
     },
     {
       id: "html-css-m7-l5",
@@ -450,9 +451,7 @@ export const htmlLessons: LessonCatalog = {
         "Ship the Odin landing page clone to prove you can mix flex utilities, typography, and buttons at scale.",
       duration: "2 hrs",
       type: "project",
-      url: resourceLink(
-        "foundations/html_css/flexbox/project-landing-page.md"
-      ),
+      url: resourceLink("foundations/html_css/flexbox/project-landing-page.md"),
     },
   ],
   "html-css-m8": [
@@ -462,9 +461,7 @@ export const htmlLessons: LessonCatalog = {
       summary:
         "Meet grid containers, tracks, and the mental model for two-dimensional layout.",
       duration: "12 min",
-      url: resourceLink(
-        "intermediate_html_css/grid/introduction_to_grid.md"
-      ),
+      url: resourceLink("intermediate_html_css/grid/introduction_to_grid.md"),
     },
     {
       id: "html-css-m8-l2",
@@ -490,9 +487,7 @@ export const htmlLessons: LessonCatalog = {
       summary:
         "Blend both layout systems to solve awkward edge cases and keep markup minimal.",
       duration: "12 min",
-      url: resourceLink(
-        "intermediate_html_css/grid/using_flexbox_and_grid.md"
-      ),
+      url: resourceLink("intermediate_html_css/grid/using_flexbox_and_grid.md"),
     },
     {
       id: "html-css-m8-l5",
@@ -521,9 +516,7 @@ export const htmlLessons: LessonCatalog = {
       summary:
         "Use HTML validation attributes, Constraint API, and inline hints to keep forms friendly.",
       duration: "15 min",
-      url: resourceLink(
-        "intermediate_html_css/forms/form_validations.md"
-      ),
+      url: resourceLink("intermediate_html_css/forms/form_validations.md"),
     },
     {
       id: "html-css-m9-l3",
@@ -531,9 +524,7 @@ export const htmlLessons: LessonCatalog = {
       summary:
         "Check contrast ratios, states, and error messaging so forms remain legible for everyone.",
       duration: "12 min",
-      url: resourceLink(
-        "advanced_html_css/accessibility/accessible_colors.md"
-      ),
+      url: resourceLink("advanced_html_css/accessibility/accessible_colors.md"),
     },
     {
       id: "html-css-m9-l4",
@@ -542,9 +533,7 @@ export const htmlLessons: LessonCatalog = {
         "Design and build the Odin sign-up brief with validation, helper text, and a responsive layout.",
       duration: "2 hrs",
       type: "project",
-      url: resourceLink(
-        "intermediate_html_css/forms/project_sign_up_form.md"
-      ),
+      url: resourceLink("intermediate_html_css/forms/project_sign_up_form.md"),
     },
   ],
   "html-css-m10": [
@@ -574,9 +563,7 @@ export const htmlLessons: LessonCatalog = {
       summary:
         "Target breakpoints with clamp(), prefers-reduced-motion, and container-aware thinking.",
       duration: "15 min",
-      url: resourceLink(
-        "advanced_html_css/responsive_design/media_queries.md"
-      ),
+      url: resourceLink("advanced_html_css/responsive_design/media_queries.md"),
     },
     {
       id: "html-css-m10-l4",
