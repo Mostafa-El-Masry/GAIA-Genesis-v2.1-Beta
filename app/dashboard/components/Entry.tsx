@@ -21,7 +21,7 @@ export default function Entry() {
       <h2 className="text-lg font-medium">Entry</h2>
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <Card title="Continue learning" desc="Apollo Academy loop" href="/apollo/academy" action="Open Academy" />
+        <Card title="Archives & Ask" desc="Study + store notes" href="/apollo" action="Open Apollo" />
         <Card title="Review builds" desc="Private embeds & notes" href="/Labs" action="Open Labs" />
         <Card title="Safety" desc="Vault, Backups, CSV import" href="/ELEUTHIA" action="Open ELEUTHIA" />
         <Card title="Appearance" desc="Theme + primitives (per-user)" href="/Settings" action="Open Settings" />

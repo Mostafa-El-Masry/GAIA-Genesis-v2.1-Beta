@@ -1,120 +1,183 @@
-export type QuizItem = {
-  q: string;
-  choices: string[];
-  answer: number; // index in choices
+﻿export type Lesson = {
+  id: string;
+  title: string;
+  summary: string;
+  type?: "project" | "lesson";
+};
+
+export type Section = {
+  id: string;
+  title: string;
+  lessons: Lesson[];
+};
+
+export type LearningPath = {
+  id: string;
+  title: string;
+  overview: string;
+  description: string;
+  sections: Section[];
 };
 
 export type MicroConcept = {
-  id: string;       // e.g., "html-foundations"
-  nodeId: string;   // links to Tower node, e.g., "html-t1"
-  trackId: string;  // e.g., "html"
+  id: string;
+  nodeId: string;
+  trackId: string;
   trackTitle: string;
   title: string;
-  lesson: string;   // short learn text
-  quiz: QuizItem[];
+  lesson: string;
 };
 
-export const concepts: MicroConcept[] = [
-  {
-    id: "html-foundations",
-    nodeId: "html-t1",
-    trackId: "html",
-    trackTitle: "HTML",
-    title: "Semantic structure",
-    lesson: "HTML gives meaning to content. Prefer semantic tags (<header>, <main>, <section>, <article>, <nav>, <footer>) over generic <div> when they match the content purpose.",
-    quiz: [
-      { q: "Which element best wraps the primary page content?",
-        choices: ["<div>", "<main>", "<section>", "<article>"], answer: 1 },
-      { q: "A group of site-wide links goes in…",
-        choices: ["<nav>", "<footer>", "<aside>", "<header>"], answer: 0 },
-    ],
-  },
-  {
-    id: "css-foundations",
-    nodeId: "css-t1",
-    trackId: "css",
-    trackTitle: "CSS",
-    title: "Cascade & specificity",
-    lesson: "The cascade resolves conflicts using specificity and source order. Utility-first (Tailwind) keeps specificity low and predictable by composing classes in markup.",
-    quiz: [
-      { q: "Which has higher specificity?", choices: [".card .title", "#title", "h1.title", ".title"], answer: 1 },
-      { q: "Utility-first CSS (like Tailwind) helps by…",
-        choices: ["increasing specificity", "avoiding CSS entirely", "keeping styles composable with low-specificity classes", "forcing inline styles"], answer: 2 },
-    ],
-  },
-  {
-    id: "js-foundations",
-    nodeId: "js-t1",
-    trackId: "js",
-    trackTitle: "JavaScript",
-    title: "Values & references",
-    lesson: "Primitives (string, number, boolean, null, undefined, symbol, bigint) copy by value; objects/arrays/functions copy by reference.",
-    quiz: [
-      { q: "Arrays in JS are…", choices: ["primitives", "by-value", "by-reference objects", "immutable"], answer: 2 },
-      { q: "Which copies by value?", choices: ["{}", "[]", "function(){}", "42"], answer: 3 },
-    ],
-  },
-  {
-    id: "tailwind-foundations",
-    nodeId: "tailwind-t1",
-    trackId: "tailwind",
-    trackTitle: "Tailwind",
-    title: "Utility mindset",
-    lesson: "Compose small utility classes in your markup. Reach for CSS files only when necessary (components, complex states) to keep velocity high (TFX).",
-    quiz: [
-      { q: "Prefer CSS files when…",
-        choices: ["simple spacing & color", "one-off layout tweaks", "component with complex state/styles reused widely", "never"], answer: 2 },
-      { q: "Tailwind utilities are applied…", choices: ["in .css files", "inline as class names", "only via @apply", "not in React"], answer: 1 },
-    ],
-  },
-  {
-    id: "git-foundations",
-    nodeId: "git-t1",
-    trackId: "git",
-    trackTitle: "Git & CLI",
-    title: "Commit small & often",
-    lesson: "Small commits with clear messages make history readable. Use branches for features, PRs for review, and tags/releases for milestones.",
-    quiz: [
-      { q: "Good commit messages are…",
-        choices: ["vague", "long & meandering", "concise & imperative", "emoji-only"], answer: 2 },
-      { q: "Stable milestones are best marked with…",
-        choices: ["branches", "releases/tags", "merge commits", "stash"], answer: 1 },
-    ],
-  },
-  {
-    id: "react-foundations",
-    nodeId: "react-t1",
-    trackId: "react",
-    trackTitle: "React",
-    title: "State → UI",
-    lesson: "React renders UI from state. Keep components pure when possible; lift state up; use hooks for side effects and data fetching.",
-    quiz: [
-      { q: "UI should be derived from…", choices: ["DOM mutations", "global vars", "state", "timers"], answer: 2 },
-      { q: "Side effects belong in…", choices: ["useEffect", "render body", "className", "CSS"], answer: 0 },
-    ],
-  },
-  {
-    id: "next-foundations",
-    nodeId: "next-t1",
-    trackId: "next",
-    trackTitle: "Next.js",
-    title: "App Router basics",
-    lesson: "The App Router uses nested layouts, server components by default, and client components with 'use client'. Keep data fetching on the server when possible.",
-    quiz: [
-      { q: "Server components are…", choices: ["default", "opt-in only", "deprecated", "client-only"], answer: 0 },
-      { q: "Mark a component as client with…", choices: ["'client'", "'use client'", "// client", "<Client/>"], answer: 1 },
-    ],
-  },
-  {
-    id: "node-foundations",
-    nodeId: "node-t1",
-    trackId: "node",
-    trackTitle: "Node.js",
-    title: "Modules & runtime",
-    lesson: "Node runs JS outside the browser. Prefer ESM imports, use npm scripts, and learn async patterns (promises/async-await).",
-    quiz: [
-      { q: "Modern import style is…", choices: ["require()", "import … from …", "eval()", "XMLHttpRequest"], answer: 1 },
-      { q: "Async flow is best handled with…", choices: ["callbacks only", "promises/async-await", "busy-wait loops", "setInterval"], answer: 1 },
-    ],
-  },
-];
+export const htmlCssPath: LearningPath = {
+  id: "html-css-foundations",
+  title: "HTML & CSS Foundations",
+  overview:
+    "Start with beginner-friendly lessons that combine semantic HTML and expressive CSS. Each checklist mirrors the Odin Project structure — complete them in order to unlock bigger projects.",
+  description:
+    "This merged path guides you through structuring documents, styling them, and shipping polished layouts. Every section contains quick lessons plus a project when you're ready to apply the skills.",
+  sections: [
+    {
+      id: "html-basics",
+      title: "Beginner HTML Concepts",
+      lessons: [
+        {
+          id: "intro",
+          title: "Introduction",
+          summary: "Understand HTML anatomy, required tags, and how browsers parse documents.",
+        },
+        {
+          id: "emmet",
+          title: "Emmet & productivity",
+          summary: "Use shorthand expansions to scaffold markup in seconds.",
+        },
+        {
+          id: "headings-lists",
+          title: "Headings, lists, & text",
+          summary: "Craft accessible outlines with headings, paragraphs, ordered/unordered lists.",
+        },
+        {
+          id: "links-media",
+          title: "Links & media",
+          summary: "Add navigation, images, audio/video, and alt text best practices.",
+        },
+        {
+          id: "tables",
+          title: "Tables",
+          summary: "Display tabular data with <table>, <thead>, <tbody>, and scoped headers.",
+        },
+      ],
+    },
+    {
+      id: "css-basics",
+      title: "Beginner CSS Concepts",
+      lessons: [
+        {
+          id: "defaults",
+          title: "Default styles",
+          summary: "Learn the browser defaults, reset styles, and the cascade.",
+        },
+        {
+          id: "units",
+          title: "CSS units",
+          summary: "px vs rem vs %, viewport units, and when to use each.",
+        },
+        {
+          id: "text",
+          title: "Typography",
+          summary: "Font families, weights, line-height, letter-spacing, and variables.",
+        },
+        {
+          id: "selectors",
+          title: "Selectors & specificity",
+          summary: "Master combinators, pseudo-classes, and how specificity resolves conflicts.",
+        },
+        {
+          id: "positioning",
+          title: "Positioning",
+          summary: "Normal flow, inline vs block, absolute/fixed positioning, and stacking.",
+        },
+      ],
+    },
+    {
+      id: "forms",
+      title: "Forms",
+      lessons: [
+        {
+          id: "basics",
+          title: "Form basics",
+          summary: "Structure forms with labels, name attributes, and submit mechanisms.",
+        },
+        {
+          id: "validation",
+          title: "Form validation",
+          summary: "Built-in validation attributes, constraint API, and UX tips.",
+        },
+        {
+          id: "signup-project",
+          title: "Project: Sign-up form",
+          summary: "Build a polished signup form with validation, hints, and error states.",
+          type: "project",
+        },
+      ],
+    },
+    {
+      id: "layout",
+      title: "Layout & Grid",
+      lessons: [
+        {
+          id: "flexbox",
+          title: "Flexbox essentials",
+          summary: "Axes, grow/shrink, alignment, and responsive stacks.",
+        },
+        {
+          id: "grid",
+          title: "CSS Grid introduction",
+          summary: "Define grid tracks, place items, and build admin-style dashboards.",
+        },
+        {
+          id: "dashboard-project",
+          title: "Project: Admin dashboard",
+          summary: "Apply grid & flex to recreate a multi-panel dashboard layout.",
+          type: "project",
+        },
+      ],
+    },
+    {
+      id: "advanced-css",
+      title: "Intermediate CSS Concepts",
+      lessons: [
+        {
+          id: "functions",
+          title: "CSS functions",
+          summary: "calc(), clamp(), color-mix(), and building fluid systems.",
+        },
+        {
+          id: "custom-props",
+          title: "Custom properties",
+          summary: "Design tokens, theming, and dynamic styling.",
+        },
+        {
+          id: "frameworks",
+          title: "Frameworks & preprocessors",
+          summary: "Sass, PostCSS, Tailwind, and how they integrate with builds.",
+        },
+        {
+          id: "compat",
+          title: "Browser compatibility",
+          summary: "Use @supports, fallbacks, and testing strategies for legacy browsers.",
+        },
+      ],
+    },
+  ],
+};
+
+export const concepts: MicroConcept[] = htmlCssPath.sections.flatMap((section) =>
+  section.lessons.map((lesson) => ({
+    id: `${section.id}-${lesson.id}`,
+    nodeId: `${section.id}-${lesson.id}`,
+    trackId: section.id,
+    trackTitle: section.title,
+    title: lesson.title,
+    lesson: lesson.summary,
+  }))
+);

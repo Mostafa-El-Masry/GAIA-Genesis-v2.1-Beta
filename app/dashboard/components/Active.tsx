@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -49,7 +49,7 @@ export default function Active() {
       <h2 className="text-lg font-medium">Active</h2>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Link href="/apollo/tower" className="rounded-lg border gaia-border p-4 transition gaia-hover-soft">
+        <Link href="/apollo" className="rounded-lg border gaia-border p-4 transition gaia-hover-soft">
           <div className="text-xs gaia-muted">Tower</div>
           <div className="mt-1 text-3xl font-semibold">{unlocked}</div>
           <div className="text-xs gaia-muted">nodes unlocked</div>
@@ -58,7 +58,7 @@ export default function Active() {
         <Link href="/apollo/academy" className="rounded-lg border gaia-border p-4 transition gaia-hover-soft">
           <div className="text-xs gaia-muted">Last Academy score</div>
           <div className="mt-1 text-3xl font-semibold">
-            {last ? `${last.score}/${last.total}` : "—"}
+            {last ? `${last.score}/${last.total}` : "â€”"}
           </div>
           <div className="text-xs gaia-muted">{last ? new Date(last.completedAt).toLocaleString() : "No sessions yet"}</div>
         </Link>
@@ -78,3 +78,4 @@ export default function Active() {
     </section>
   );
 }
+

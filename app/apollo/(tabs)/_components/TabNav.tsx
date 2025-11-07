@@ -7,8 +7,6 @@ import clsx from "clsx";
 const tabs = [
   { href: "/apollo/ask", label: "Ask" },
   { href: "/apollo/archives", label: "Archives" },
-  { href: "/apollo/tower", label: "Tower" },
-  { href: "/apollo/academy", label: "Academy" },
 ];
 
 export default function TabNav() {

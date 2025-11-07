@@ -1,10 +1,10 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
 /**
- * Intro v3.0 (Phase 5 · Week 1)
+ * Intro v3.0 (Phase 5 Â· Week 1)
  * - Removes local/glass search (global search now lives in the Slim App Bar)
  * - Keeps 8 quick links (no /search)
  * - Mobile-first layout, centered symbol
@@ -23,8 +23,6 @@ export default function Intro() {
     { href: "/interlog", label: "Intro" },
   ];
   const more = [
-    { href: "/Archives", label: "Archives" },
-    { href: "/apollo/academy", label: "Academy" },
     { href: "/media-tools", label: "Media Tools" },
     { href: "/settings", label: "Settings" },
   ];
@@ -117,3 +115,4 @@ export default function Intro() {
     </main>
   );
 }
+

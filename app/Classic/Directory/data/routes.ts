@@ -2,7 +2,7 @@ export type RouteInfo = { path: string; note?: string };
 export const devRoutes: RouteInfo[] = [
   { path: "/", note: "Home" },
   { path: "/dashboard" },
-  { path: "/apollo/tower", note: "Tower" },
+  { path: "/apollo", note: "Apollo" },
   { path: "/Labs" },
   { path: "/Gallery" },
   { path: "/Timeline" },

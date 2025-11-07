@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useTowerProgress } from "../lib/progress";
 import { tracks } from "../data/tracks";
@@ -14,8 +14,7 @@ export default function MiniMap() {
     <div className="hidden items-center gap-2 md:flex">
       <div className="text-xs gaia-muted">Mini-map</div>
       <div className="grid grid-cols-5 gap-0.5 rounded border gaia-border p-1 ring-1 ring-cyan-500/20">
-        {tracks.map((t) =>
-          t.nodes.map((n) => (
+        {tracks.map((t) =>\n          t.modules.map((n) => (
             <button
               key={n.id}
               onClick={() => {
@@ -29,7 +28,7 @@ export default function MiniMap() {
                   : "color-mix(in srgb, var(--gaia-border) 70%, transparent)",
                 opacity: isUnlocked(n.id) ? 1 : 0.6,
               }}
-              title={`${t.title} · Tier ${n.tier}`}
+              title={`${t.title} Â· Tier ${n.tier}`}
               aria-label={`${t.title} tier ${n.tier}`}
             />
           ))
@@ -38,3 +37,4 @@ export default function MiniMap() {
     </div>
   );
 }
+
