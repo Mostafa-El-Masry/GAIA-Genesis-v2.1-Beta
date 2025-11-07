@@ -1,17 +1,18 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import LessonReader from "../components/LessonReader";
-import { lessonsByModuleId } from "../data/lessons";
-import type { Module, Track } from "../data/tracks";
-import { tracks } from "../data/tracks";
+import LessonReader from "../../(tabs)/tower/components/LessonReader";
+import { lessonsByModuleId } from "../../(tabs)/tower/data/lessons";
+import type { Module, Track } from "../../(tabs)/tower/data/tracks";
+import { tracks } from "../../(tabs)/tower/data/tracks";
 
 type PageProps = {
   params: { moduleId: string };
 };
 
 export function generateMetadata({ params }: PageProps): Metadata {
-  const meta = findModule(params.moduleId);
+  const moduleKey = normalizeModuleId(params.moduleId);
+  const meta = findModule(moduleKey);
   if (!meta) {
     return {
       title: "Module not found - GAIA Apollo",
@@ -24,10 +25,10 @@ export function generateMetadata({ params }: PageProps): Metadata {
 }
 
 export default function ModuleLessonsPage({ params }: PageProps) {
-  console.log("[tower] module route hit", params.moduleId);
-  const meta = findModule(params.moduleId);
+  const moduleKey = normalizeModuleId(params.moduleId);
+  const meta = findModule(moduleKey);
   if (!meta) notFound();
-  const lessons = lessonsByModuleId[meta.module.id] ?? [];
+  const lessons = lessonsByModuleId[moduleKey] ?? [];
 
   return (
     <main className="min-h-screen gaia-surface-soft">
@@ -92,6 +93,7 @@ function findModule(moduleId: string):
       order: number;
     }
   | null {
+  if (!moduleId) return null;
   for (const track of tracks) {
     const index = track.modules.findIndex((mod) => mod.id === moduleId);
     if (index !== -1) {
@@ -103,4 +105,11 @@ function findModule(moduleId: string):
     }
   }
   return null;
+}
+
+function normalizeModuleId(value: string) {
+  return decodeURIComponent(value ?? "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .toLowerCase();
 }
