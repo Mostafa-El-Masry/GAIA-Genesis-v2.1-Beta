@@ -15,6 +15,7 @@ export default function AppBar() {
   const pathname = usePathname();
   const { profile, status } = useAuthSnapshot();
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const closeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clearCloseTimer = () => {
     if (closeTimeout.current) {
@@ -65,7 +66,11 @@ export default function AppBar() {
     }
   }, [pathname]);
 
-  if (pathname === "/" || pathname.startsWith("/auth")) return null;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted || pathname === "/" || pathname.startsWith("/auth")) return null;
 
   return (
     <header className="gaia-glass-strong gaia-border fixed inset-x-0 top-0 z-50 border-b border backdrop-blur">

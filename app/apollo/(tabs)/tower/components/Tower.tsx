@@ -145,7 +145,7 @@ export default function Tower() {
     }
     // Normalize the module ID before navigation to match the page's normalization
     const normalizedId = module.id.trim().replace(/\s+/g, "-").toLowerCase();
-    router.push(`/apollo/tower/${encodeURIComponent(normalizedId)}`);
+    router.push(`/apollo/tower/topics/${encodeURIComponent(normalizedId)}`);
   };
 
   const handleModuleToggle = (module: ModuleState) => {
