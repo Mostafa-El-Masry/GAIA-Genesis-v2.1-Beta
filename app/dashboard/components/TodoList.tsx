@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Button from "@/app/DesignSystem/components/Button";
@@ -146,11 +146,15 @@ export default function TodoList() {
   return (
     <section className="space-y-6 rounded-2xl border border-white/5 bg-slate-950/60 p-6 shadow-2xl shadow-black/20">
       <header className="flex flex-col gap-2">
-        <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Daily focus</p>
-        <h2 className="text-2xl font-semibold text-white">Three-lane todo flow</h2>
+        <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
+          Daily focus
+        </p>
+        <h2 className="text-2xl font-semibold text-white">
+          Three-lane todo flow
+        </h2>
         <p className="text-sm text-slate-400">
-          Surface one Life, Programming, and Distraction task at a time. Finish it, watch it vanish, and the next item
-          from that lane bubbles up.
+          Surface one Life, Programming, and Distraction task at a time. Finish
+          it, watch it vanish, and the next item from that lane bubbles up.
         </p>
       </header>
 
@@ -183,8 +187,11 @@ export default function TodoList() {
           </select>
         </label>
 
-        <Button type="submit" className="h-12 self-end px-6 text-sm sm:self-auto">
-          Add task
+        <Button
+          type="submit"
+          className="h-12 self-end w-12 sm:self-end flex items-center justify-center text-4xl font-light bg-transparent hover:bg-transparent border border-white/20 hover:border-white/50"
+        >
+          +
         </Button>
       </form>
 
@@ -204,7 +211,9 @@ export default function TodoList() {
               className="group relative flex flex-col gap-4 overflow-hidden rounded-2xl border border-white/10 bg-slate-900/70 p-4 text-white shadow-inner"
             >
               <div
-                className={`pointer-events-none absolute inset-0 opacity-70 blur-2xl bg-gradient-to-br ${categoryAccents[todo.category]}`}
+                className={`pointer-events-none absolute inset-0 opacity-70 blur-2xl bg-gradient-to-br ${
+                  categoryAccents[todo.category]
+                }`}
               />
               <div className="relative z-10 flex items-start justify-between gap-3">
                 <div>
@@ -219,7 +228,9 @@ export default function TodoList() {
                         className="w-full rounded-xl border border-white/20 bg-white/90 px-3 py-2 text-sm text-slate-900 focus:outline-none"
                         value={editing.text}
                         onChange={(event) =>
-                          setEditing((prev) => (prev ? { ...prev, text: event.target.value } : prev))
+                          setEditing((prev) =>
+                            prev ? { ...prev, text: event.target.value } : prev
+                          )
                         }
                       />
                       <select
@@ -227,7 +238,12 @@ export default function TodoList() {
                         value={editing.category}
                         onChange={(event) =>
                           setEditing((prev) =>
-                            prev ? { ...prev, category: event.target.value as Category } : prev
+                            prev
+                              ? {
+                                  ...prev,
+                                  category: event.target.value as Category,
+                                }
+                              : prev
                           )
                         }
                       >
@@ -239,19 +255,21 @@ export default function TodoList() {
                       </select>
                     </div>
                   ) : (
-                    <p className="mt-2 text-base font-medium text-white">{todo.text}</p>
+                    <p className="mt-2 text-base font-medium text-white">
+                      {todo.text}
+                    </p>
                   )}
                 </div>
 
                 {!isEditing && (
                   <button
                     type="button"
-                    className="rounded-full border border-white/20 px-3 py-1 text-[11px] uppercase tracking-wide text-white/80 transition hover:border-white/50 hover:text-white"
+                    className="rounded-full border border-white/20 w-8 h-8 flex items-center justify-center text-white/80 transition hover:border-white/50 hover:text-white"
                     onClick={() => startEdit(todo)}
                     aria-label="Edit todo"
                     title="Edit todo"
                   >
-                    Edit
+                    ✎
                   </button>
                 )}
               </div>
@@ -259,7 +277,11 @@ export default function TodoList() {
               <div className="relative z-10">
                 {isEditing ? (
                   <div className="flex flex-wrap gap-2">
-                    <Button type="button" className="flex-1 text-sm" onClick={saveEdit}>
+                    <Button
+                      type="button"
+                      className="flex-1 text-sm"
+                      onClick={saveEdit}
+                    >
                       Save
                     </Button>
                     <Button
@@ -271,7 +293,11 @@ export default function TodoList() {
                     </Button>
                   </div>
                 ) : (
-                  <Button type="button" className="w-full text-sm" onClick={() => completeTodo(todo.id)}>
+                  <Button
+                    type="button"
+                    className="w-full text-sm"
+                    onClick={() => completeTodo(todo.id)}
+                  >
                     Mark complete
                   </Button>
                 )}
@@ -283,7 +309,8 @@ export default function TodoList() {
 
       {backlogCount > 0 && (
         <p className="text-xs text-slate-500">
-          {backlogCount} more queued in backlog. Complete current items to unlock the rest.
+          {backlogCount} more queued in backlog. Complete current items to
+          unlock the rest.
         </p>
       )}
     </section>

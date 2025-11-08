@@ -52,23 +52,10 @@ export default function PasswordProtection({
 
   return (
     <div className={styles.authWrapper}>
-      <section className="gallery-controls">
-        <div className="gallery-controls__filters">
-          <button disabled className={styles.filterButtonDisabled}>
-            <span className={styles.filterLabel}>Filters</span>
-            <span className={styles.filterSummary}>No filters selected</span>
-          </button>
-        </div>
-        <div className="gallery-controls__toggle">
-          <div className={styles.galleryToggleDisabled}>Photo</div>
-        </div>
-        <div className="gallery-controls__sort">
-          <div className={styles.sortButtonDisabled}>Newest</div>
-        </div>
-      </section>
       <div className={styles.galleryAuth}>
         <div className={styles.container}>
           <h2 className={styles.title}>Gallery Access</h2>
+          <p className={styles.subtitle}>Enter the shared password to continue.</p>
           <form onSubmit={handleSubmit} className={styles.form}>
             <input
               type="password"
@@ -76,6 +63,7 @@ export default function PasswordProtection({
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter password"
               className={styles.input}
+              autoFocus
               autoComplete="off"
             />
             {error && <p className={styles.error}>{error}</p>}
