@@ -1,0 +1,141 @@
+"use client";
+
+import { shiftDate, todayKey } from "@/utils/dates";
+
+export type Category = "life" | "programming" | "distraction";
+
+export type DailyTask = {
+  id: string;
+  category: Category;
+  date: string;
+  title: string;
+  notes?: string;
+  done: boolean;
+  doneAt?: string;
+};
+
+export type DailyTrioByDate = Partial<Record<Category, DailyTask>>;
+export type DailyStore = Record<string, DailyTrioByDate>;
+
+const STORAGE_KEY = "gaia.dailytrio.v1";
+const UPDATE_EVENT = "gaia:dailytrio:update";
+const categories: Category[] = ["life", "programming", "distraction"];
+
+function isBrowser() {
+  return typeof window !== "undefined" && typeof localStorage !== "undefined";
+}
+
+function emitUpdate() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(UPDATE_EVENT));
+}
+
+export function getStore(): DailyStore {
+  if (!isBrowser()) return {};
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (typeof parsed === "object" && parsed) return parsed as DailyStore;
+    return {};
+  } catch {
+    return {};
+  }
+}
+
+export function saveStore(store: DailyStore): void {
+  if (!isBrowser()) return;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+  emitUpdate();
+}
+
+export function ensureDate(date: string): void {
+  if (!isBrowser()) return;
+  const store = getStore();
+  if (!store[date]) {
+    store[date] = {};
+    saveStore(store);
+  }
+}
+
+export function upsertTask(task: DailyTask): void {
+  if (!isBrowser()) return;
+  const store = getStore();
+  const day = store[task.date] ?? {};
+  day[task.category] = { ...task, done: Boolean(task.done) };
+  store[task.date] = day;
+  saveStore(store);
+}
+
+export function toggleDone(
+  date: string,
+  category: Category,
+  done: boolean
+): void {
+  if (!isBrowser()) return;
+  const store = getStore();
+  const day = store[date];
+  if (!day || !day[category]) return;
+  const doneAt = done ? todayKey() : undefined;
+  day[category] = { ...day[category], done, doneAt };
+  saveStore(store);
+}
+
+export function dayHasPending(date: string): boolean {
+  const store = getStore();
+  const day = store[date];
+  if (!day) return true;
+  return categories.some((category) => {
+    const task = day[category];
+    return !task || !task.done;
+  });
+}
+
+export function getNextActionableDay(onOrAfterDate: string): string | null {
+  let key = onOrAfterDate;
+  for (let i = 0; i < 365; i += 1) {
+    if (dayHasPending(key)) return key;
+    key = shiftDate(key, 1);
+  }
+  return null;
+}
+
+export function getDay(date: string): DailyTrioByDate {
+  const store = getStore();
+  return store[date] ?? {};
+}
+
+export function updateTaskNotes(
+  date: string,
+  category: Category,
+  notes?: string
+): void {
+  if (!isBrowser()) return;
+  const store = getStore();
+  const day = store[date];
+  if (!day || !day[category]) return;
+  day[category] = {
+    ...day[category],
+    notes: notes?.trim() ? notes.trim() : undefined,
+  };
+  saveStore(store);
+}
+
+export function getPendingCount(date: string): number {
+  const day = getDay(date);
+  return categories.reduce((count, category) => {
+    const task = day[category];
+    if (!task || !task.done) return count + 1;
+    return count;
+  }, 0);
+}
+
+export function getCategories() {
+  return categories.slice();
+}
+
+export function hasStoreSupport() {
+  return isBrowser();
+}
+
+export const DailyStoreEvent = UPDATE_EVENT;

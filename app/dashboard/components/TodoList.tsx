@@ -1,147 +1,176 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Button from "@/app/DesignSystem/components/Button";
+import {
+  DailyStore,
+  DailyTask,
+  DailyTrioByDate,
+  DailyStoreEvent,
+  Category,
+  ensureDate,
+  getNextActionableDay,
+  getStore,
+  toggleDone,
+  upsertTask,
+  updateTaskNotes,
+} from "@/scripts/store";
+import { formatKey, shiftDate, todayKey } from "@/utils/dates";
 
-type Category = "life" | "programming" | "distraction";
+type CategoryMeta = { id: Category; label: string; accent: string };
 
-type Todo = {
-  id: string;
-  text: string;
-  category: Category;
-  completed: boolean;
-  createdAt: number;
-  completedAt?: number;
-};
-
-const STORAGE_KEY = "gaia.dashboard.todos";
-
-const categories: { id: Category; label: string }[] = [
-  { id: "life", label: "Life" },
-  { id: "programming", label: "Programming" },
-  { id: "distraction", label: "Distraction" },
+const CATEGORY_META: CategoryMeta[] = [
+  {
+    id: "life",
+    label: "Life",
+    accent: "from-rose-500/20 via-transparent to-transparent",
+  },
+  {
+    id: "programming",
+    label: "Programming",
+    accent: "from-sky-500/20 via-transparent to-transparent",
+  },
+  {
+    id: "distraction",
+    label: "Distraction",
+    accent: "from-amber-400/20 via-transparent to-transparent",
+  },
 ];
 
-const categoryAccents: Record<Category, string> = {
-  life: "from-fuchsia-500/25 via-transparent to-transparent",
-  programming: "from-sky-500/25 via-transparent to-transparent",
-  distraction: "from-amber-500/25 via-transparent to-transparent",
-};
+type DraftPayload = { title: string; notes: string };
 
-function readTodos(): Todo[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as Todo[];
-    if (!Array.isArray(parsed)) return [];
-    return parsed.map((todo) => ({
-      ...todo,
-      createdAt: Number(todo.createdAt) || Date.now(),
-    }));
-  } catch {
-    return [];
-  }
-}
-
-function writeTodos(next: Todo[]) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-}
+const createEmptyDrafts = (): Record<Category, DraftPayload> => ({
+  life: { title: "", notes: "" },
+  programming: { title: "", notes: "" },
+  distraction: { title: "", notes: "" },
+});
 
 function makeId() {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
     return crypto.randomUUID();
   }
-  return `todo-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  return `daily-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-type EditingState = { id: string; text: string; category: Category };
-
 export default function TodoList() {
-  const [todos, setTodos] = useState<Todo[]>([]);
-  const [text, setText] = useState("");
-  const [category, setCategory] = useState<Category>("life");
-  const [editing, setEditing] = useState<EditingState | null>(null);
+  const [store, setStore] = useState<DailyStore>({});
+  const [currentDay, setCurrentDay] = useState<string | null>(null);
+  const [drafts, setDrafts] = useState<Record<Category, DraftPayload>>(
+    createEmptyDrafts()
+  );
+  const [ready, setReady] = useState(false);
 
-  useEffect(() => {
-    setTodos(readTodos());
-    const onStorage = (event: StorageEvent) => {
-      if (event.key === STORAGE_KEY) {
-        setTodos(readTodos());
-      }
-    };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+  const syncStore = useCallback(() => {
+    setStore(getStore());
   }, []);
 
-  const persist = (next: Todo[]) => {
-    setTodos(next);
-    writeTodos(next);
-  };
+  const hydrate = useCallback(() => {
+    const today = todayKey();
+    const defaultDay = getNextActionableDay(today) ?? today;
+    ensureDate(defaultDay);
+    syncStore();
+    setCurrentDay(defaultDay);
+    setReady(true);
+  }, [syncStore]);
 
-  const visibleTodos = useMemo(() => {
-    return categories
-      .map(({ id }) => {
-        return (
-          todos
-            .filter((todo) => todo.category === id && !todo.completed)
-            .sort((a, b) => a.createdAt - b.createdAt)[0] || null
-        );
-      })
-      .filter(Boolean) as Todo[];
-  }, [todos]);
-
-  const backlogCount = useMemo(() => {
-    const pending = todos.filter((todo) => !todo.completed).length;
-    return pending > visibleTodos.length ? pending - visibleTodos.length : 0;
-  }, [todos, visibleTodos]);
-
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const cleaned = text.trim();
-    if (!cleaned) return;
-    const next: Todo = {
-      id: makeId(),
-      text: cleaned,
-      category,
-      completed: false,
-      createdAt: Date.now(),
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    hydrate();
+    const handleStorage = () => syncStore();
+    const handleCustom: EventListener = () => syncStore();
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener(DailyStoreEvent, handleCustom);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener(DailyStoreEvent, handleCustom);
     };
-    persist([next, ...todos]);
-    setText("");
+  }, [hydrate, syncStore]);
+
+  useEffect(() => {
+    if (!currentDay) return;
+    ensureDate(currentDay);
+    syncStore();
+    setDrafts(createEmptyDrafts());
+  }, [currentDay, syncStore]);
+
+  const dayData: DailyTrioByDate = useMemo(() => {
+    if (!currentDay) return {};
+    return store[currentDay] ?? {};
+  }, [currentDay, store]);
+
+  const pendingCount = useMemo(() => {
+    if (!currentDay) return CATEGORY_META.length;
+    return CATEGORY_META.reduce((count, cat) => {
+      const task = (dayData && dayData[cat.id]) as DailyTask | undefined;
+      if (!task || !task.done) return count + 1;
+      return count;
+    }, 0);
+  }, [currentDay, dayData]);
+
+  const allDone = pendingCount === 0;
+
+  const jumpToDay = (target: string) => {
+    ensureDate(target);
+    syncStore();
+    setCurrentDay(target);
   };
 
-  const completeTodo = (id: string) => {
-    persist(
-      todos.map((todo) =>
-        todo.id === id
-          ? { ...todo, completed: true, completedAt: Date.now() }
-          : todo
-      )
+  const handlePrev = () => {
+    if (!currentDay) return;
+    jumpToDay(shiftDate(currentDay, -1));
+  };
+
+  const handleNext = () => {
+    if (!currentDay) return;
+    const immediate = shiftDate(currentDay, 1);
+    const actionable = getNextActionableDay(immediate);
+    jumpToDay(actionable ?? immediate);
+  };
+
+  const handleToday = () => {
+    const today = todayKey();
+    const target = getNextActionableDay(today) ?? today;
+    jumpToDay(target);
+  };
+
+  const handleAdd = (category: Category, payload: DraftPayload) => {
+    if (!currentDay) return;
+    const title = payload.title.trim();
+    const notes = payload.notes.trim();
+    if (!title) return;
+    const task: DailyTask = {
+      id: makeId(),
+      category,
+      date: currentDay,
+      title,
+      notes: notes ? notes : undefined,
+      done: false,
+    };
+    upsertTask(task);
+    syncStore();
+    setDrafts((prev) => ({ ...prev, [category]: { title: "", notes: "" } }));
+  };
+
+  const handleToggle = (category: Category, done: boolean) => {
+    if (!currentDay) return;
+    toggleDone(currentDay, category, done);
+    syncStore();
+  };
+
+  const handleUpdateNotes = (category: Category, value: string) => {
+    if (!currentDay) return;
+    updateTaskNotes(currentDay, category, value);
+    syncStore();
+  };
+
+  if (!ready || !currentDay) {
+    return (
+      <section className="space-y-4 rounded-2xl border border-white/5 bg-slate-950/60 p-6 shadow-2xl shadow-black/20">
+        <div className="h-5 w-40 animate-pulse rounded bg-slate-800/60" />
+        <div className="h-24 animate-pulse rounded-xl border border-white/5 bg-slate-900/40" />
+      </section>
     );
-    if (editing?.id === id) {
-      setEditing(null);
-    }
-  };
-
-  const startEdit = (todo: Todo) => {
-    setEditing({ id: todo.id, text: todo.text, category: todo.category });
-  };
-
-  const saveEdit = () => {
-    if (!editing) return;
-    const trimmed = editing.text.trim();
-    if (!trimmed) return;
-    persist(
-      todos.map((todo) =>
-        todo.id === editing.id
-          ? { ...todo, text: trimmed, category: editing.category }
-          : todo
-      )
-    );
-    setEditing(null);
-  };
+  }
 
   return (
     <section className="space-y-6 rounded-2xl border border-white/5 bg-slate-950/60 p-6 shadow-2xl shadow-black/20">
@@ -150,169 +179,256 @@ export default function TodoList() {
           Daily focus
         </p>
         <h2 className="text-2xl font-semibold text-white">
-          Three-lane todo flow
+          Daily trio tracker
         </h2>
         <p className="text-sm text-slate-400">
-          Surface one Life, Programming, and Distraction task at a time. Finish
-          it, watch it vanish, and the next item from that lane bubbles up.
+          Track one Life, Programming, and Distraction task per date. Navigate
+          day-by-day to keep momentum without noise.
         </p>
       </header>
 
-      <form
-        className="grid gap-3 rounded-2xl border border-white/10 bg-slate-900/60 p-4 sm:grid-cols-[1fr_minmax(140px,170px)_auto]"
-        onSubmit={handleSubmit}
-      >
-        <label className="flex flex-col text-xs font-semibold uppercase tracking-wide text-slate-400">
-          Task
-          <input
-            className="mt-2 rounded-xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:outline-none gaia-focus"
-            value={text}
-            onChange={(event) => setText(event.target.value)}
-            placeholder="Add a todo"
-          />
-        </label>
+      <DayNavigator
+        date={currentDay}
+        onPrev={handlePrev}
+        onNext={handleNext}
+        onToday={handleToday}
+      />
 
-        <label className="flex flex-col text-xs font-semibold uppercase tracking-wide text-slate-400">
-          Category
-          <select
-            className="mt-2 rounded-xl border border-white/10 bg-slate-950/60 px-3 py-3 text-sm text-white focus:outline-none gaia-focus"
-            value={category}
-            onChange={(event) => setCategory(event.target.value as Category)}
-          >
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <Button
-          type="submit"
-          className="h-12 self-end w-12 sm:self-end flex items-center justify-center text-4xl font-light bg-transparent hover:bg-transparent border border-white/20 hover:border-white/50"
-        >
-          +
-        </Button>
-      </form>
-
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        {visibleTodos.length === 0 && (
-          <div className="md:col-span-3 rounded-2xl border border-dashed border-white/10 p-6 text-sm text-slate-400">
-            Nothing pending. Add todos above to queue up each lane.
-          </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-slate-900/50 p-4 text-sm text-slate-200">
+        <div>
+          Pending:{" "}
+          <span className="font-semibold text-white">
+            {pendingCount} / {CATEGORY_META.length}
+          </span>
+        </div>
+        {allDone ? (
+          <span className="text-emerald-300">
+            All done for {formatKey(currentDay)}
+          </span>
+        ) : (
+          <span className="text-slate-400">
+            Work in progress for {formatKey(currentDay)}
+          </span>
         )}
-
-        {visibleTodos.map((todo) => {
-          const cat = categories.find((c) => c.id === todo.category);
-          const isEditing = editing?.id === todo.id;
-          return (
-            <article
-              key={todo.id}
-              className="group relative flex flex-col gap-4 overflow-hidden rounded-2xl border border-white/10 bg-slate-900/70 p-4 text-white shadow-inner"
-            >
-              <div
-                className={`pointer-events-none absolute inset-0 opacity-70 blur-2xl bg-gradient-to-br ${
-                  categoryAccents[todo.category]
-                }`}
-              />
-              <div className="relative z-10 flex items-start justify-between gap-3">
-                <div>
-                  <div className="text-xs uppercase tracking-[0.3em] text-slate-200">
-                    {isEditing
-                      ? categories.find((c) => c.id === editing.category)?.label
-                      : cat?.label ?? todo.category}
-                  </div>
-                  {isEditing ? (
-                    <div className="mt-3 space-y-2 text-slate-900">
-                      <input
-                        className="w-full rounded-xl border border-white/20 bg-white/90 px-3 py-2 text-sm text-slate-900 focus:outline-none"
-                        value={editing.text}
-                        onChange={(event) =>
-                          setEditing((prev) =>
-                            prev ? { ...prev, text: event.target.value } : prev
-                          )
-                        }
-                      />
-                      <select
-                        className="w-full rounded-xl border border-white/20 bg-white/90 px-3 py-2 text-sm text-slate-900 focus:outline-none"
-                        value={editing.category}
-                        onChange={(event) =>
-                          setEditing((prev) =>
-                            prev
-                              ? {
-                                  ...prev,
-                                  category: event.target.value as Category,
-                                }
-                              : prev
-                          )
-                        }
-                      >
-                        {categories.map((opt) => (
-                          <option key={opt.id} value={opt.id}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  ) : (
-                    <p className="mt-2 text-base font-medium text-white">
-                      {todo.text}
-                    </p>
-                  )}
-                </div>
-
-                {!isEditing && (
-                  <button
-                    type="button"
-                    className="rounded-full border border-white/20 w-8 h-8 flex items-center justify-center text-white/80 transition hover:border-white/50 hover:text-white"
-                    onClick={() => startEdit(todo)}
-                    aria-label="Edit todo"
-                    title="Edit todo"
-                  >
-                    ✎
-                  </button>
-                )}
-              </div>
-
-              <div className="relative z-10">
-                {isEditing ? (
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      type="button"
-                      className="flex-1 text-sm"
-                      onClick={saveEdit}
-                    >
-                      Save
-                    </Button>
-                    <Button
-                      type="button"
-                      className="flex-1 text-sm gaia-hover-soft"
-                      onClick={() => setEditing(null)}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                ) : (
-                  <Button
-                    type="button"
-                    className="w-full text-sm"
-                    onClick={() => completeTodo(todo.id)}
-                  >
-                    Mark complete
-                  </Button>
-                )}
-              </div>
-            </article>
-          );
-        })}
       </div>
 
-      {backlogCount > 0 && (
-        <p className="text-xs text-slate-500">
-          {backlogCount} more queued in backlog. Complete current items to
-          unlock the rest.
-        </p>
-      )}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        {CATEGORY_META.map((category) => (
+          <CategoryCard
+            key={`${category.id}-${currentDay}`}
+            category={category}
+            date={currentDay}
+            task={(dayData && dayData[category.id]) as DailyTask | undefined}
+            drafts={drafts[category.id]}
+            onDraftChange={(draft) =>
+              setDrafts((prev) => ({
+                ...prev,
+                [category.id]: draft,
+              }))
+            }
+            onAdd={handleAdd}
+            onToggle={handleToggle}
+            onUpdateNotes={handleUpdateNotes}
+          />
+        ))}
+      </div>
     </section>
+  );
+}
+
+function DayNavigator({
+  date,
+  onPrev,
+  onNext,
+  onToday,
+}: {
+  date: string;
+  onPrev: () => void;
+  onNext: () => void;
+  onToday: () => void;
+}) {
+  return (
+    <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-slate-950/40 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-1 items-center justify-between gap-3">
+        <button
+          type="button"
+          className="rounded-xl border border-white/15 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-white/80 transition hover:border-white/40 hover:text-white"
+          onClick={onPrev}
+        >
+          ← Yesterday
+        </button>
+        <div className="text-center text-lg font-semibold text-white">
+          {formatKey(date)}
+        </div>
+        <button
+          type="button"
+          className="rounded-xl border border-white/15 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-white/80 transition hover:border-white/40 hover:text-white"
+          onClick={onNext}
+        >
+          Tomorrow →
+        </button>
+      </div>
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={onToday}
+          className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-emerald-100 transition hover:border-emerald-400"
+        >
+          Today
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function CategoryCard({
+  category,
+  task,
+  date,
+  drafts,
+  onDraftChange,
+  onAdd,
+  onToggle,
+  onUpdateNotes,
+}: {
+  category: CategoryMeta;
+  task?: DailyTask;
+  date: string;
+  drafts: DraftPayload;
+  onDraftChange: (draft: DraftPayload) => void;
+  onAdd: (category: Category, draft: DraftPayload) => void;
+  onToggle: (category: Category, done: boolean) => void;
+  onUpdateNotes: (category: Category, notes: string) => void;
+}) {
+  const [noteDraft, setNoteDraft] = useState(task?.notes ?? "");
+  const [saveState, setSaveState] = useState<"idle" | "saving">("idle");
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setNoteDraft(task?.notes ?? "");
+    setError(null);
+  }, [task?.id, task?.notes, date]);
+
+  const handleAdd = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!drafts.title.trim()) {
+      setError("Title is required.");
+      return;
+    }
+    onAdd(category.id, drafts);
+    setError(null);
+  };
+
+  const handleSaveNotes = () => {
+    if (saveState === "saving") return;
+    setSaveState("saving");
+    onUpdateNotes(category.id, noteDraft);
+    setTimeout(() => setSaveState("idle"), 200);
+  };
+
+  const badgeColor = category.accent;
+
+  return (
+    <article className="relative flex flex-col gap-4 overflow-hidden rounded-2xl border border-white/10 bg-slate-900/70 p-4 text-white shadow-inner">
+      <div
+        className={`pointer-events-none absolute inset-0 opacity-60 blur-2xl bg-gradient-to-br ${badgeColor}`}
+      />
+      <div className="relative z-10 flex items-center justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-200">
+            {category.label}
+          </p>
+          <p className="text-xs text-slate-400">Date: {formatKey(date)}</p>
+        </div>
+        {task?.done && task.doneAt && (
+          <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-100">
+            Done on {formatKey(task.doneAt)}
+          </span>
+        )}
+      </div>
+
+      <div className="relative z-10 space-y-3">
+        {task ? (
+          <>
+            <div>
+              <p className="text-lg font-semibold text-white">{task.title}</p>
+              {task.notes && (
+                <p className="mt-1 text-sm text-slate-200 whitespace-pre-wrap break-words">
+                  {task.notes}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-semibold uppercase tracking-wide text-slate-300">
+                Notes
+                <textarea
+                  className="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/60 p-3 text-sm text-white placeholder:text-slate-500 focus:outline-none"
+                  rows={3}
+                  value={noteDraft}
+                  onChange={(event) => setNoteDraft(event.target.value)}
+                  placeholder="Add context or reminders"
+                />
+              </label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  className="flex-1 text-sm"
+                  disabled={
+                    noteDraft === (task.notes ?? "") || saveState === "saving"
+                  }
+                  onClick={handleSaveNotes}
+                >
+                  {saveState === "saving" ? "Saving..." : "Save notes"}
+                </Button>
+                <Button
+                  type="button"
+                  className="flex-1 text-sm gaia-hover-soft"
+                  onClick={() => onToggle(category.id, !task.done)}
+                >
+                  {task.done ? "Mark pending" : "Mark done"}
+                </Button>
+              </div>
+            </div>
+          </>
+        ) : (
+          <form className="space-y-3" onSubmit={handleAdd}>
+            <label className="text-xs font-semibold uppercase tracking-wide text-slate-300">
+              Title
+              <input
+                className="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none"
+                value={drafts.title}
+                onChange={(event) =>
+                  onDraftChange({
+                    ...drafts,
+                    title: event.target.value,
+                  })
+                }
+                placeholder={`Add ${category.label} task`}
+              />
+            </label>
+            <label className="text-xs font-semibold uppercase tracking-wide text-slate-300">
+              Notes
+              <textarea
+                className="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/60 p-3 text-sm text-white placeholder:text-slate-500 focus:outline-none"
+                rows={3}
+                value={drafts.notes}
+                onChange={(event) =>
+                  onDraftChange({
+                    ...drafts,
+                    notes: event.target.value,
+                  })
+                }
+                placeholder="Optional context"
+              />
+            </label>
+            {error && <p className="text-xs text-rose-300">{error}</p>}
+            <Button type="submit" className="w-full text-sm">
+              Save
+            </Button>
+          </form>
+        )}
+      </div>
+    </article>
   );
 }
