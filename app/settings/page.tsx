@@ -200,7 +200,7 @@ export default function SettingsPage() {
     resetViews();
     setGalleryStatus({
       type: "success",
-      message: "Gallery views reset.",
+      message: "Gallery watch stats reset.",
     });
   }, []);
 
@@ -431,7 +431,7 @@ export default function SettingsPage() {
           <section className="space-y-3 rounded-lg border gaia-border p-4">
             <h2 className="font-medium">Gallery maintenance</h2>
             <p className="text-sm gaia-muted">
-              Trigger a new scan or clear saved view counts for the gallery.
+              Trigger a new scan or clear saved watch/preview time tracked on this device.
             </p>
             <div className="flex flex-wrap items-center gap-2">
               <button
@@ -452,7 +452,7 @@ export default function SettingsPage() {
                 onClick={handleResetViews}
                 className="rounded border px-3 py-1 text-sm gaia-border gaia-hover-soft"
               >
-                Reset views
+                Reset watch data
               </button>
               <button
                 type="button"

@@ -1,12 +1,3 @@
-export const viewFormatter = new Intl.NumberFormat("en", {
-  notation: "compact",
-  maximumFractionDigits: 1,
-});
-
-export function formatViews(count: number) {
-  return viewFormatter.format(Math.max(0, count));
-}
-
 export function formatDuration(totalSeconds?: number) {
   if (typeof totalSeconds !== "number" || !Number.isFinite(totalSeconds)) {
     return undefined;

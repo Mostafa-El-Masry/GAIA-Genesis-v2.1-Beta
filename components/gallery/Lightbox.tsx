@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { GalleryItem } from "./types";
 import {
-  incView,
+  addWatchTime,
   getVideoProgress,
   setVideoProgress,
   getVideoVolume,
@@ -370,10 +370,29 @@ export default function Lightbox({
   }, [clearTimers, item, onClose, onNext, onPrev, showRecommendations]);
 
   useEffect(() => {
-    if (item) {
-      incView(item.id);
-      window.dispatchEvent(new Event("gallery:view-updated"));
-    }
+    if (!item) return;
+    if (typeof document === "undefined") return;
+
+    const MIN_DELTA = 0.1;
+    let last = Date.now();
+    const flush = () => {
+      const now = Date.now();
+      const delta = (now - last) / 1000;
+      if (delta > MIN_DELTA) {
+        addWatchTime(item.id, delta);
+      }
+      last = now;
+    };
+
+    const handleVisibility = () => {
+      flush();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      flush();
+    };
   }, [item]);
 
   useEffect(() => {

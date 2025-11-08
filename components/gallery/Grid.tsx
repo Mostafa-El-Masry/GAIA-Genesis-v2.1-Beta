@@ -3,8 +3,8 @@ import NextImage from "next/image";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { GalleryItem } from "./types";
-import { getFavorites, getViews, setFavorite } from "./prefs";
-import { formatDuration, formatViews } from "./metrics";
+import { getFavorites, getWatchTimeMap, setFavorite } from "./prefs";
+import { formatDuration } from "./metrics";
 import {
   DownloadGlyph,
   EyeGlyph,
@@ -101,7 +101,7 @@ export default function Grid({
   titleMap?: Record<string, string>;
   onUpdateTitle?: (id: string, title: string | null) => void;
 }) {
-  const [viewMap, setViewMap] = useState<Record<string, number>>({});
+  const [watchMap, setWatchMap] = useState<Record<string, number>>({});
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
   const [limit, setLimit] = useState(PAGE_SIZE);
   const signatureRef = useRef<string>("");
@@ -134,19 +134,19 @@ export default function Grid({
   };
 
   useEffect(() => {
-    function syncViews() {
+    function syncWatchTime() {
       try {
-        setViewMap(getViews());
+        setWatchMap(getWatchTimeMap());
       } catch {
-        setViewMap({});
+        setWatchMap({});
       }
     }
-    syncViews();
-    window.addEventListener("storage", syncViews);
-    const handleCustom = () => syncViews();
+    syncWatchTime();
+    window.addEventListener("storage", syncWatchTime);
+    const handleCustom = () => syncWatchTime();
     window.addEventListener("gallery:view-updated", handleCustom);
     return () => {
-      window.removeEventListener("storage", syncViews);
+      window.removeEventListener("storage", syncWatchTime);
       window.removeEventListener("gallery:view-updated", handleCustom);
     };
   }, [items.length]);
@@ -212,7 +212,7 @@ export default function Grid({
             item={item}
             idx={idx}
             onOpen={onOpen}
-            views={viewMap[item.id] ?? 0}
+            watchSeconds={watchMap[item.id] ?? 0}
             isFavorite={Boolean(favorites[item.id])}
             onToggleFavorite={() => handleToggleFavorite(item.id)}
             tags={tagMap[item.id] ?? item.tags ?? []}
@@ -242,7 +242,7 @@ function GalleryCard({
   item,
   idx,
   onOpen,
-  views,
+  watchSeconds,
   isFavorite,
   onToggleFavorite,
   tags,
@@ -254,7 +254,7 @@ function GalleryCard({
   item: GalleryItem;
   idx: number;
   onOpen: (idx: number) => void;
-  views: number;
+  watchSeconds: number;
   isFavorite: boolean;
   onToggleFavorite: () => void;
   tags: string[] | undefined;
@@ -365,8 +365,9 @@ function GalleryCard({
     titleMap && titleMap[item.id] ? titleMap[item.id] : name;
   // Allow title override from local storage via GalleryClient -> passed prop
   // We'll read it from the DOM prop via dataset if provided later; default is filesystem-derived
-  const viewLabel = formatViews(views);
-  const durationLabel =
+  const totalWatchSeconds = Math.max(0, watchSeconds || 0);
+  const watchLabel = formatDuration(totalWatchSeconds) ?? "0:00";
+  const clipDuration =
     item.type === "video" ? formatDuration(item.duration) : undefined;
 
   const downloadName = item.src.split("/").pop() ?? `${name}`;
@@ -419,13 +420,16 @@ function GalleryCard({
         <div className="card-overlay">
           <div className="card-overlay__row card-overlay__row--top">
             <div className="card-overlay__badges">
-              <span className="card-pill card-pill--views">
+              <span
+                className="card-pill card-pill--views"
+                title={`${watchLabel} total watch time`}
+              >
                 <EyeGlyph className="card-pill__icon" strokeWidth={1.8} />
-                {viewLabel}
+                {watchLabel}
               </span>
-              {durationLabel && (
+              {clipDuration && (
                 <span className="card-pill card-pill--muted">
-                  {durationLabel}
+                  {clipDuration}
                 </span>
               )}
             </div>

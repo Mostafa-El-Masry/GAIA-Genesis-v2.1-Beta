@@ -7,7 +7,8 @@ export type Mode = "images" | "videos";
 export type SortKey = "newest" | "trend";
 
 const PREF = "gaia_gallery_prefs";
-const VIEWS = "gaia_gallery_views";
+const WATCH_TIME = "gaia_gallery_watch_seconds";
+const LEGACY_VIEWS = "gaia_gallery_views";
 const ADDED = "gaia_gallery_addedAt";
 const VIDEO_PROGRESS = "gaia_gallery_video_progress";
 const VIDEO_VOLUME = "gaia_gallery_video_volume";
@@ -38,21 +39,43 @@ export function usePrefs() {
   return { mode, setMode, sort, setSort };
 }
 
-export function getViews(): Record<string, number> {
-  try {
-    return JSON.parse(localStorage.getItem(VIEWS) || "{}");
-  } catch {
-    return {};
+function readWatchMap(): Record<string, number> {
+  if (typeof window === "undefined") return {};
+  const targets = [WATCH_TIME, LEGACY_VIEWS];
+  for (const key of targets) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (key === LEGACY_VIEWS) {
+          localStorage.setItem(WATCH_TIME, raw);
+        }
+        return typeof parsed === "object" && parsed ? parsed : {};
+      }
+    } catch {
+      // ignore parse errors and continue to next key
+    }
   }
+  return {};
 }
-export function incView(id: string) {
-  const map = getViews();
-  map[id] = (map[id] || 0) + 1;
-  localStorage.setItem(VIEWS, JSON.stringify(map));
+
+export function getWatchTimeMap(): Record<string, number> {
+  return readWatchMap();
+}
+
+export function addWatchTime(id: string, seconds: number) {
+  if (typeof window === "undefined") return;
+  if (!Number.isFinite(seconds) || seconds <= 0) return;
+  const map = { ...readWatchMap() };
+  map[id] = (map[id] || 0) + seconds;
+  localStorage.setItem(WATCH_TIME, JSON.stringify(map));
+  window.dispatchEvent(new CustomEvent("gallery:view-updated"));
 }
 
 export function resetViews() {
-  localStorage.setItem(VIEWS, "{}");
+  if (typeof window === "undefined") return;
+  localStorage.setItem(WATCH_TIME, "{}");
+  localStorage.setItem(LEGACY_VIEWS, "{}");
   window.dispatchEvent(new CustomEvent("gallery:view-updated"));
 }
 export function getAddedMap(): Record<string, string> {

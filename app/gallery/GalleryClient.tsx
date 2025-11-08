@@ -19,6 +19,7 @@ import {
   setItemTags,
   getTitlesMap,
   setItemTitle,
+  getWatchTimeMap,
 } from "@/components/gallery/prefs";
 import type { GalleryItem } from "@/components/gallery/types";
 import type { Mode } from "@/components/gallery/prefs";
@@ -473,11 +474,11 @@ export default function GalleryClient() {
       );
     }
 
-    const views =
-      typeof window === "undefined"
-        ? {}
-        : JSON.parse(localStorage.getItem("gaia_gallery_views") || "{}");
-    return [...tagged].sort((a, b) => (views[b.id] || 0) - (views[a.id] || 0));
+    const watchTotals =
+      typeof window === "undefined" ? {} : getWatchTimeMap();
+    return [...tagged].sort(
+      (a, b) => (watchTotals[b.id] || 0) - (watchTotals[a.id] || 0)
+    );
   }, [
     items,
     mode,

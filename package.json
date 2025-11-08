@@ -12,9 +12,13 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.925.0",
+    "@codesandbox/sandpack-react": "^2.20.0",
     "@monaco-editor/react": "^4.7.0",
     "@vercel/speed-insights": "^1.2.0",
     "clsx": "^2.1.1",
+    "file-saver": "^2.0.5",
+    "idb-keyval": "^6.2.2",
+    "jszip": "^3.10.1",
     "monaco-editor": "^0.54.0",
     "next": "^16.0.0",
     "react": "^19.2.0",

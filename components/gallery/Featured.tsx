@@ -2,8 +2,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { GalleryItem } from "./types";
 import { PhotoGlyph, VideoGlyph } from "./icons";
-import { getViews } from "./prefs";
-import { formatDuration, formatViews } from "./metrics";
+import { getWatchTimeMap } from "./prefs";
+import { formatDuration } from "./metrics";
 import { getDisplayName } from "./utils";
 import { getProxiedImageUrl } from "./imageUrl";
 
@@ -19,7 +19,7 @@ function pickRandom<T extends GalleryItem>(
 function FeaturedTile({
   item,
   type,
-  views,
+  watchSeconds,
   onClick,
   onRename,
   onEditTags,
@@ -28,7 +28,7 @@ function FeaturedTile({
 }: {
   item: GalleryItem | null;
   type: "image" | "video";
-  views: number;
+  watchSeconds: number;
   onClick: (id: string) => void;
   onRename?: (id: string, title: string | null) => void;
   onEditTags?: (id: string, tags: string[]) => void;
@@ -59,6 +59,7 @@ function FeaturedTile({
     return effectivePreview ?? fallback;
   }, [effectivePreview, isVideo, item.preview, item.src]);
   const duration = formatDuration(item.duration);
+  const watchLabel = formatDuration(Math.max(0, watchSeconds || 0)) ?? "0:00";
   const videoRef = useRef<HTMLVideoElement>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -249,7 +250,10 @@ function FeaturedTile({
       )}
       <div className="featured-card__overlay">
         <div className="featured-card__meta featured-card__meta--overlay">
-          <span className="featured-card__meta-item">
+          <span
+            className="featured-card__meta-item"
+            title={`${watchLabel} total watch time`}
+          >
             <span className="featured-card__badge-icon">
               {isVideo ? (
                 <VideoGlyph className="gallery-icon" />
@@ -257,7 +261,7 @@ function FeaturedTile({
                 <PhotoGlyph className="gallery-icon" />
               )}
             </span>
-            {formatViews(views)}
+            {watchLabel}
           </span>
           {isVideo && duration && (
             <span className="featured-card__meta-item">{duration}</span>
@@ -283,22 +287,22 @@ export default function Featured({
   tagMap?: Record<string, string[]>;
   onEditTags?: (id: string, tags: string[]) => void;
 }) {
-  const [viewMap, setViewMap] = useState<Record<string, number>>({});
+  const [watchMap, setWatchMap] = useState<Record<string, number>>({});
   const [img, vid] = useMemo(
     () => [pickRandom(items, "image"), pickRandom(items, "video")],
     [items]
   );
 
   useEffect(() => {
-    function syncViews() {
+    function syncWatchTime() {
       try {
-        setViewMap(getViews());
+        setWatchMap(getWatchTimeMap());
       } catch {
-        setViewMap({});
+        setWatchMap({});
       }
     }
-    syncViews();
-    const handle = () => syncViews();
+    syncWatchTime();
+    const handle = () => syncWatchTime();
     window.addEventListener("storage", handle);
     window.addEventListener("gallery:view-updated", handle);
     return () => {
@@ -319,7 +323,7 @@ export default function Featured({
           key="featured-image"
           item={img}
           type="image"
-          views={img ? viewMap[img.id] ?? 0 : 0}
+          watchSeconds={img ? watchMap[img.id] ?? 0 : 0}
           onClick={handleClick}
           onRename={onRename}
           onEditTags={onEditTags}
@@ -330,7 +334,7 @@ export default function Featured({
           key="featured-video"
           item={vid}
           type="video"
-          views={vid ? viewMap[vid.id] ?? 0 : 0}
+          watchSeconds={vid ? watchMap[vid.id] ?? 0 : 0}
           onClick={handleClick}
           onRename={onRename}
           onEditTags={onEditTags}
