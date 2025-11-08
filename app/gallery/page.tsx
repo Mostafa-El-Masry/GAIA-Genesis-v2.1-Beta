@@ -1,17 +1,8 @@
-import PermissionGate from "@/components/permissions/PermissionGate";
-import GalleryClient from "./GalleryClient";
-import PasswordProtection from "./components/PasswordProtection";
+"use client";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+import GalleryPageClient from "./GalleryPageClient";
 
 export default function GalleryPage() {
-  return (
-    <PermissionGate permission="gallery">
-      <PasswordProtection>
-        <GalleryClient />
-      </PasswordProtection>
-    </PermissionGate>
-  );
+  return <GalleryPageClient />;
 }
 

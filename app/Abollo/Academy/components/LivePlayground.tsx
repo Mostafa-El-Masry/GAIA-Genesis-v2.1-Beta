@@ -10,7 +10,6 @@ import {
   SandpackProvider,
   useSandpack,
 } from "@codesandbox/sandpack-react";
-import "@codesandbox/sandpack-react/dist/index.css";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -32,11 +31,14 @@ const templateOptions: Array<{ key: TemplateKey; label: string }> = [
 ];
 
 const defaultFiles = (key: StarterKey): SandpackFiles => {
+  const files = starterMaps[key] ?? starterMaps.vanilla;
   return Object.fromEntries(
-    Object.entries(starterMaps[key] ?? starterMaps.vanilla).map(([path, file]) => [
-      path,
-      { ...file },
-    ])
+    Object.entries(files).map(([path, file]) => {
+      if (file && typeof file === "object") {
+        return [path, { ...file }];
+      }
+      return [path, { code: String(file ?? "") }];
+    })
   );
 };
 
@@ -59,7 +61,7 @@ export default function LivePlayground({
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<string>("");
   const [isBundling, setIsBundling] = useState(true);
-  const previewRef = useRef<SandpackPreviewRef>(null);
+  const previewRef = useRef<SandpackPreviewRef | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -78,8 +80,11 @@ export default function LivePlayground({
   }, [lessonId]);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
     setIsBundling(true);
-  }, [providerKey]);
+    const timer = window.setTimeout(() => setIsBundling(false), 400);
+    return () => window.clearTimeout(timer);
+  }, [providerKey, files]);
 
   const customSetup = useMemo(() => {
     if (currentTemplate === "react") {
@@ -139,16 +144,6 @@ export default function LivePlayground({
     setStatus("Imported project from ZIP");
   };
 
-  const handlePreviewReady = () => {
-    setIsBundling(false);
-    setStatus("Preview synced");
-  };
-
-  const handlePreviewError = () => {
-    setIsBundling(false);
-    setStatus("Preview failed to load");
-  };
-
   if (loading) {
     return (
       <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-6 text-sm text-slate-400">
@@ -198,8 +193,6 @@ export default function LivePlayground({
               ref={previewRef}
               showOpenInCodeSandbox={false}
               showNavigator
-              onReady={handlePreviewReady}
-              onError={handlePreviewError}
               className="min-h-[560px]"
             />
           </div>
@@ -217,7 +210,7 @@ type ToolbarProps = {
   onImport: (files: SandpackFiles) => void;
   status: string;
   onStatusChange?: (text: string) => void;
-  previewRef: React.RefObject<SandpackPreviewRef>;
+  previewRef: React.RefObject<SandpackPreviewRef | null>;
 };
 
 function PlaygroundToolbar({
@@ -383,7 +376,12 @@ function PlaygroundToolbar({
 
 function cloneFiles(source: SandpackFiles): SandpackFiles {
   return Object.fromEntries(
-    Object.entries(source).map(([path, file]) => [path, { ...file }])
+    Object.entries(source).map(([path, file]) => {
+      if (file && typeof file === "object") {
+        return [path, { ...file }];
+      }
+      return [path, { code: String(file ?? "") }];
+    })
   );
 }
 
