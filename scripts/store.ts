@@ -110,13 +110,49 @@ export function updateTaskNotes(
   category: Category,
   notes?: string
 ): void {
+  updateTaskDetails(date, category, { notes });
+}
+
+type EditableFields = {
+  title?: string;
+  notes?: string;
+};
+
+export function updateTaskDetails(
+  date: string,
+  category: Category,
+  updates: EditableFields
+): void {
   if (!isBrowser()) return;
   const store = getStore();
   const day = store[date];
   if (!day || !day[category]) return;
+
+  const task = day[category]!;
+  const hasTitle = Object.prototype.hasOwnProperty.call(updates, "title");
+  const hasNotes = Object.prototype.hasOwnProperty.call(updates, "notes");
+
+  if (!hasTitle && !hasNotes) return;
+
+  let nextTitle = task.title;
+  if (hasTitle) {
+    const candidate = updates.title;
+    if (typeof candidate !== "string") return;
+    const trimmed = candidate.trim();
+    if (!trimmed) return;
+    nextTitle = trimmed;
+  }
+
+  let nextNotes = task.notes;
+  if (hasNotes) {
+    const trimmed = updates.notes?.trim();
+    nextNotes = trimmed ? trimmed : undefined;
+  }
+
   day[category] = {
-    ...day[category],
-    notes: notes?.trim() ? notes.trim() : undefined,
+    ...task,
+    title: nextTitle,
+    notes: nextNotes,
   };
   saveStore(store);
 }

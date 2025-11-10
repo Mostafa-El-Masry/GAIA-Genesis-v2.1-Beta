@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ButtonHTMLAttributes,
+  type ReactNode,
+} from "react";
 import Button from "@/app/DesignSystem/components/Button";
 import {
   DailyStore,
@@ -13,7 +20,7 @@ import {
   getStore,
   toggleDone,
   upsertTask,
-  updateTaskNotes,
+  updateTaskDetails,
 } from "@/scripts/store";
 import { formatKey, shiftDate, todayKey } from "@/utils/dates";
 
@@ -37,12 +44,12 @@ const CATEGORY_META: CategoryMeta[] = [
   },
 ];
 
-type DraftPayload = { title: string; notes: string };
+type DraftPayload = { title: string };
 
 const createEmptyDrafts = (): Record<Category, DraftPayload> => ({
-  life: { title: "", notes: "" },
-  programming: { title: "", notes: "" },
-  distraction: { title: "", notes: "" },
+  life: { title: "" },
+  programming: { title: "" },
+  distraction: { title: "" },
 });
 
 function makeId() {
@@ -136,19 +143,17 @@ export default function TodoList() {
   const handleAdd = (category: Category, payload: DraftPayload) => {
     if (!currentDay) return;
     const title = payload.title.trim();
-    const notes = payload.notes.trim();
     if (!title) return;
     const task: DailyTask = {
       id: makeId(),
       category,
       date: currentDay,
       title,
-      notes: notes ? notes : undefined,
       done: false,
     };
     upsertTask(task);
     syncStore();
-    setDrafts((prev) => ({ ...prev, [category]: { title: "", notes: "" } }));
+    setDrafts((prev) => ({ ...prev, [category]: { title: "" } }));
   };
 
   const handleToggle = (category: Category, done: boolean) => {
@@ -157,9 +162,13 @@ export default function TodoList() {
     syncStore();
   };
 
-  const handleUpdateNotes = (category: Category, value: string) => {
+  const handleEditTask = (category: Category, payload: DraftPayload) => {
     if (!currentDay) return;
-    updateTaskNotes(currentDay, category, value);
+    const title = payload.title.trim();
+    if (!title) return;
+    updateTaskDetails(currentDay, category, {
+      title,
+    });
     syncStore();
   };
 
@@ -228,7 +237,8 @@ export default function TodoList() {
             }
             onAdd={handleAdd}
             onToggle={handleToggle}
-            onUpdateNotes={handleUpdateNotes}
+            onEdit={handleEditTask}
+            onJumpToToday={handleToday}
           />
         ))}
       </div>
@@ -289,7 +299,8 @@ function CategoryCard({
   onDraftChange,
   onAdd,
   onToggle,
-  onUpdateNotes,
+  onEdit,
+  onJumpToToday,
 }: {
   category: CategoryMeta;
   task?: DailyTask;
@@ -298,16 +309,22 @@ function CategoryCard({
   onDraftChange: (draft: DraftPayload) => void;
   onAdd: (category: Category, draft: DraftPayload) => void;
   onToggle: (category: Category, done: boolean) => void;
-  onUpdateNotes: (category: Category, notes: string) => void;
+  onEdit: (category: Category, draft: DraftPayload) => void;
+  onJumpToToday: () => void;
 }) {
-  const [noteDraft, setNoteDraft] = useState(task?.notes ?? "");
-  const [saveState, setSaveState] = useState<"idle" | "saving">("idle");
   const [error, setError] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [editDraft, setEditDraft] = useState<DraftPayload>({
+    title: task?.title ?? "",
+  });
 
   useEffect(() => {
-    setNoteDraft(task?.notes ?? "");
+    setEditDraft({
+      title: task?.title ?? "",
+    });
+    setEditing(false);
     setError(null);
-  }, [task?.id, task?.notes, date]);
+  }, [task?.id, task?.title, date]);
 
   const handleAdd = (event: React.FormEvent) => {
     event.preventDefault();
@@ -319,17 +336,37 @@ function CategoryCard({
     setError(null);
   };
 
-  const handleSaveNotes = () => {
-    if (saveState === "saving") return;
-    setSaveState("saving");
-    onUpdateNotes(category.id, noteDraft);
-    setTimeout(() => setSaveState("idle"), 200);
+  const handleEditSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!editDraft.title.trim()) {
+      setError("Title is required.");
+      return;
+    }
+    onEdit(category.id, editDraft);
+    setError(null);
+    setEditing(false);
+  };
+
+  const handleEditCancel = () => {
+    setEditDraft({
+      title: task?.title ?? "",
+    });
+    setError(null);
+    setEditing(false);
+  };
+
+  const handleStartEdit = () => {
+    setEditDraft({
+      title: task?.title ?? "",
+    });
+    setError(null);
+    setEditing(true);
   };
 
   const badgeColor = category.accent;
 
   return (
-    <article className="relative flex flex-col gap-4 overflow-hidden rounded-2xl border border-white/10 bg-slate-900/70 p-4 text-white shadow-inner">
+    <article className="group/todo relative flex flex-col gap-4 overflow-hidden rounded-2xl border border-white/10 bg-slate-900/70 p-4 text-white shadow-inner">
       <div
         className={`pointer-events-none absolute inset-0 opacity-60 blur-2xl bg-gradient-to-br ${badgeColor}`}
       />
@@ -349,48 +386,66 @@ function CategoryCard({
 
       <div className="relative z-10 space-y-3">
         {task ? (
-          <>
-            <div>
-              <p className="text-lg font-semibold text-white">{task.title}</p>
-              {task.notes && (
-                <p className="mt-1 text-sm text-slate-200 whitespace-pre-wrap break-words">
-                  {task.notes}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
+          editing ? (
+            <form className="space-y-3" onSubmit={handleEditSubmit}>
               <label className="text-xs font-semibold uppercase tracking-wide text-slate-300">
-                Notes
-                <textarea
-                  className="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/60 p-3 text-sm text-white placeholder:text-slate-500 focus:outline-none"
-                  rows={3}
-                  value={noteDraft}
-                  onChange={(event) => setNoteDraft(event.target.value)}
-                  placeholder="Add context or reminders"
+                Title
+                <input
+                  className="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none"
+                  value={editDraft.title}
+                  onChange={(event) =>
+                    setEditDraft((prev) => ({
+                      ...prev,
+                      title: event.target.value,
+                    }))
+                  }
+                  placeholder={`Update ${category.label} task`}
                 />
               </label>
+              {error && <p className="text-xs text-rose-300">{error}</p>}
               <div className="flex gap-2">
-                <Button
-                  type="button"
-                  className="flex-1 text-sm"
-                  disabled={
-                    noteDraft === (task.notes ?? "") || saveState === "saving"
-                  }
-                  onClick={handleSaveNotes}
-                >
-                  {saveState === "saving" ? "Saving..." : "Save notes"}
+                <Button type="submit" className="flex-1 text-sm">
+                  Save changes
                 </Button>
                 <Button
                   type="button"
                   className="flex-1 text-sm gaia-hover-soft"
-                  onClick={() => onToggle(category.id, !task.done)}
+                  onClick={handleEditCancel}
                 >
-                  {task.done ? "Mark pending" : "Mark done"}
+                  Cancel
                 </Button>
               </div>
-            </div>
-          </>
+            </form>
+          ) : (
+            <>
+              <div>
+                <p
+                  className="text-lg font-semibold text-white truncate group-hover/todo:whitespace-normal group-hover/todo:overflow-visible group-hover/todo:text-clip"
+                  title={task.title}
+                >
+                  {task.title}
+                </p>
+              </div>
+
+              <div className="mt-2 flex w-full items-center justify-end gap-1.5">
+                <IconButton
+                  label="Edit task"
+                  icon={<EditIcon />}
+                  onClick={handleStartEdit}
+                />
+                <IconButton
+                  label={task.done ? "Mark pending" : "Mark done"}
+                  icon={task.done ? <UndoIcon /> : <CheckIcon />}
+                  onClick={() => onToggle(category.id, !task.done)}
+                />
+                <IconButton
+                  label="Jump to today"
+                  icon={<TodayIcon />}
+                  onClick={onJumpToToday}
+                />
+              </div>
+            </>
+          )
         ) : (
           <form className="space-y-3" onSubmit={handleAdd}>
             <label className="text-xs font-semibold uppercase tracking-wide text-slate-300">
@@ -407,21 +462,6 @@ function CategoryCard({
                 placeholder={`Add ${category.label} task`}
               />
             </label>
-            <label className="text-xs font-semibold uppercase tracking-wide text-slate-300">
-              Notes
-              <textarea
-                className="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/60 p-3 text-sm text-white placeholder:text-slate-500 focus:outline-none"
-                rows={3}
-                value={drafts.notes}
-                onChange={(event) =>
-                  onDraftChange({
-                    ...drafts,
-                    notes: event.target.value,
-                  })
-                }
-                placeholder="Optional context"
-              />
-            </label>
             {error && <p className="text-xs text-rose-300">{error}</p>}
             <Button type="submit" className="w-full text-sm">
               Save
@@ -432,3 +472,110 @@ function CategoryCard({
     </article>
   );
 }
+
+type IconButtonProps = Omit<
+  ButtonHTMLAttributes<HTMLButtonElement>,
+  "children"
+> & {
+  label: string;
+  icon: ReactNode;
+};
+
+function IconButton({
+  label,
+  icon,
+  className = "",
+  type = "button",
+  title,
+  ...rest
+}: IconButtonProps) {
+  return (
+    <button
+      type={type}
+      aria-label={label}
+      title={title ?? label}
+      className={`flex h-9 w-9 items-center justify-center rounded-full border border-white/30 text-white/70 transition hover:border-white/60 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 disabled:cursor-not-allowed disabled:opacity-40 ${className}`}
+      {...rest}
+    >
+      {icon}
+      <span className="sr-only">{label}</span>
+    </button>
+  );
+}
+
+const iconBase = "h-4 w-4";
+
+function EditIcon() {
+  return (
+    <svg
+      className={iconBase}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="m16.5 4.5 3 3" />
+      <path d="M5 19l4.25-.88L19.5 7.87a2.12 2.12 0 0 0-3-3L6.25 15.13z" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg
+      className={iconBase}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="m5 12 4 4 10-10" />
+    </svg>
+  );
+}
+
+function UndoIcon() {
+  return (
+    <svg
+      className={iconBase}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M9 7 4 12l5 5" />
+      <path d="M4 12h9a4 4 0 0 1 0 8h-3" />
+    </svg>
+  );
+}
+
+function TodayIcon() {
+  return (
+    <svg
+      className={iconBase}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M16 3v4" />
+      <path d="M8 3v4" />
+      <path d="M3 11h18" />
+      <path d="M12 15h.01" />
+    </svg>
+  );
+}
+
