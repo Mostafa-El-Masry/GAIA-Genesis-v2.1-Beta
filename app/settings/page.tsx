@@ -19,7 +19,6 @@ import type { GalleryItem } from "@/components/gallery/types";
 import { deriveAutoTags, AUTO_TAG_VERSION } from "@/components/gallery/tagging";
 import {
   useAuthSnapshot,
-  listProfiles,
   type StoredProfile,
 } from "@/lib/auth-client";
 import { normaliseEmail } from "@/lib/strings";
@@ -55,6 +54,22 @@ type ManifestResponse = {
 
 type TabId = "appearance" | "gallery" | "permissions";
 
+type UsersFetchState = "idle" | "loading" | "success" | "error";
+
+type SupabaseDirectoryUser = {
+  id: string;
+  email: string | null;
+  name: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+  lastSignInAt: string | null;
+};
+
+type SupabaseDirectoryResponse = {
+  users?: SupabaseDirectoryUser[];
+  error?: string;
+};
+
 const PERMISSION_LABELS: Record<PermissionKey, string> = {
   apollo: "Apollo",
   archives: "Archives",
@@ -86,6 +101,31 @@ const SETTINGS_TAB_CONFIG: Array<{
     permission: "settingsPermissions",
   },
 ];
+
+function mapSupabaseUsersToProfiles(
+  users: SupabaseDirectoryUser[] | undefined
+): StoredProfile[] {
+  if (!Array.isArray(users) || users.length === 0) return [];
+  const fallbackTimestamp = new Date().toISOString();
+  return users
+    .map((user) => {
+      const email = user.email?.trim();
+      if (!email) return null;
+      const createdAt = user.createdAt ?? fallbackTimestamp;
+      return {
+        id: user.id,
+        email,
+        name: user.name || null,
+        createdAt,
+        updatedAt: user.updatedAt ?? createdAt,
+        lastLoginAt: user.lastSignInAt ?? undefined,
+        lastLogoutAt: undefined,
+        lastMode: undefined,
+        sessionToken: undefined,
+      };
+    })
+    .filter((profile): profile is StoredProfile => Boolean(profile));
+}
 
 async function fetchGalleryManifest(): Promise<GalleryItem[]> {
   try {
@@ -120,27 +160,97 @@ export default function SettingsPage() {
   const [syncing, setSyncing] = useState(false);
   const [autoTagging, setAutoTagging] = useState(false);
   const [autoTagProgress, setAutoTagProgress] = useState(0);
-  const [galleryStatus, setGalleryStatus] = useState<GalleryStatus | null>(
+  const [galleryStatus, setGalleryStatus] = useState<GalleryStatus | null>(null);
+  const [profiles, setProfiles] = useState<StoredProfile[]>([]);
+  const [userDirectoryStatus, setUserDirectoryStatus] =
+    useState<UsersFetchState>("idle");
+  const [userDirectoryError, setUserDirectoryError] = useState<string | null>(
     null
   );
-  const [profiles, setProfiles] = useState<StoredProfile[]>(() =>
-    listProfiles()
-  );
+  const [userDirectoryReloadKey, setUserDirectoryReloadKey] = useState(0);
+  const refreshUserDirectory = useCallback(() => {
+    setUserDirectoryReloadKey((key) => key + 1);
+  }, []);
   const [activeTab, setActiveTab] = useState<TabId>("appearance");
 
   useEffect(() => {
-    if (typeof window === "undefined") return undefined;
-    const update = () => setProfiles(listProfiles());
-    window.addEventListener("gaia:auth:login", update);
-    window.addEventListener("gaia:auth:logout", update);
-    window.addEventListener("storage", update);
-    update();
+    if (!isAdmin) {
+      setProfiles([]);
+      setUserDirectoryStatus("idle");
+      setUserDirectoryError(null);
+      return;
+    }
+
+    const controller = new AbortController();
+    let cancelled = false;
+
+    async function loadSupabaseUsers() {
+      setUserDirectoryStatus("loading");
+      setUserDirectoryError(null);
+
+      try {
+        const response = await fetch("/api/admin/users", {
+          method: "GET",
+          cache: "no-store",
+          signal: controller.signal,
+        });
+
+        let payload: SupabaseDirectoryResponse | null = null;
+        const raw = await response.text();
+        if (raw) {
+          try {
+            payload = JSON.parse(raw) as SupabaseDirectoryResponse;
+          } catch {
+            payload = null;
+          }
+        }
+
+        if (!response.ok) {
+          const detail =
+            payload?.error ?? `Supabase request failed (${response.status})`;
+          throw new Error(detail);
+        }
+
+        if (!cancelled) {
+          setProfiles(mapSupabaseUsersToProfiles(payload?.users));
+          setUserDirectoryStatus("success");
+        }
+      } catch (error) {
+        if (controller.signal.aborted || cancelled) {
+          return;
+        }
+        setUserDirectoryStatus("error");
+        setUserDirectoryError(
+          error instanceof Error
+            ? error.message
+            : "Unable to load Supabase users."
+        );
+      }
+    }
+
+    loadSupabaseUsers();
+
     return () => {
-      window.removeEventListener("gaia:auth:login", update);
-      window.removeEventListener("gaia:auth:logout", update);
-      window.removeEventListener("storage", update);
+      cancelled = true;
+      controller.abort();
     };
-  }, []);
+  }, [isAdmin, userDirectoryReloadKey]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const handleRefresh = () => refreshUserDirectory();
+    const events = [
+      "gaia:auth:login",
+      "gaia:auth:logout",
+      "gaia:permissions:update",
+    ];
+    events.forEach((event) => window.addEventListener(event, handleRefresh));
+    return () => {
+      events.forEach((event) =>
+        window.removeEventListener(event, handleRefresh)
+      );
+    };
+  }, [refreshUserDirectory]);
 
   const availableTabs = useMemo(() => {
     const tabs: Array<{ id: TabId; label: string }> = [
@@ -511,11 +621,41 @@ export default function SettingsPage() {
 
         {activeTab === "permissions" && isAdmin && (
           <section className="space-y-4 rounded-lg border gaia-border p-4">
-            <h2 className="font-medium">User permissions</h2>
+            <div className="flex flex-wrap items-center gap-3">
+              <h2 className="font-medium">User permissions</h2>
+              <button
+                type="button"
+                onClick={refreshUserDirectory}
+                className="text-xs font-semibold text-cyan-300 transition hover:text-cyan-100 disabled:opacity-50"
+                disabled={userDirectoryStatus === "loading"}
+              >
+                Refresh from Supabase
+              </button>
+            </div>
             <p className="text-sm gaia-muted">
               Grant or revoke access to protected areas. Changes are saved
               instantly and apply on the next navigation.
             </p>
+            {userDirectoryStatus === "loading" && (
+              <p className="text-xs gaia-muted">
+                Fetching users from Supabase...
+              </p>
+            )}
+            {userDirectoryStatus === "error" && (
+              <div className="flex flex-wrap items-center gap-2 text-xs text-rose-400">
+                <span>
+                  Could not load Supabase users
+                  {userDirectoryError ? `: ${userDirectoryError}` : "."}
+                </span>
+                <button
+                  type="button"
+                  className="rounded border border-rose-400/60 px-2 py-1 text-[11px] text-rose-100 transition hover:border-rose-300 hover:text-rose-50"
+                  onClick={refreshUserDirectory}
+                >
+                  Retry
+                </button>
+              </div>
+            )}
             {sortedProfiles.length === 0 ? (
               <p className="text-sm gaia-muted">No users have signed in yet.</p>
             ) : (

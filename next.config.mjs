@@ -1,5 +1,18 @@
 // next.config.mjs
 /** @type {import('next').NextConfig} */
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseWsUrl = supabaseUrl?.replace(/^https?/, "wss");
+const connectSrc = [
+  "'self'",
+  "https://sandpack.codesandbox.io",
+  "https://*.codesandbox.io",
+  "https://*.supabase.co",
+  "wss://*.supabase.co",
+];
+
+if (supabaseUrl) connectSrc.push(supabaseUrl);
+if (supabaseWsUrl) connectSrc.push(supabaseWsUrl);
+
 const nextConfig = {
   reactStrictMode: true,
   experimental: {},
@@ -55,7 +68,7 @@ const nextConfig = {
               "img-src * 'self' data: blob:",
               "font-src 'self'",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data:",
-              "connect-src 'self' https://sandpack.codesandbox.io https://*.codesandbox.io",
+              `connect-src ${connectSrc.join(" ")}`,
               "frame-src 'self' https://sandpack.codesandbox.io https://*.codesandbox.io blob: data:",
               "worker-src 'self' blob: https://sandpack.codesandbox.io https://*.codesandbox.io",
             ].join("; "),

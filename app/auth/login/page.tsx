@@ -1,17 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useCallback, useMemo, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 
-import { completeAuth } from "./actions";
 import { sanitizeRedirect } from "@/lib/auth";
 import { recordUserLogin } from "@/lib/auth-client";
+import { supabase } from "@/lib/supabase";
+
+type SubmitStatus = {
+  type: "idle" | "info" | "error" | "success";
+  message: string;
+};
 
 export default function LoginPage() {
   const [mode, setMode] = useState<"signup" | "login">("login");
   const [redirectTo, setRedirectTo] = useState<string>("/");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<SubmitStatus>({
+    type: "idle",
+    message: "",
+  });
 
-  // Avoid using next/navigation hooks at build/prerender time — read params on client
+  // Avoid using next/navigation hooks at build/prerender time -- read params on client
   useEffect(() => {
     try {
       const sp = new URLSearchParams(window.location.search || "");
@@ -25,37 +35,111 @@ export default function LoginPage() {
   }, []);
 
   const handleSubmit = useCallback(
-    (event: FormEvent<HTMLFormElement>) => {
-      try {
-        const form = event.currentTarget;
-        const formData = new FormData(form);
-        const emailEntry = formData.get("email");
-        const nameEntry = formData.get("name");
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      if (isSubmitting) return;
 
-        const email =
-          typeof emailEntry === "string"
-            ? emailEntry.trim()
-            : emailEntry
-            ? String(emailEntry).trim()
-            : null;
-        const name =
-          typeof nameEntry === "string"
-            ? nameEntry.trim()
-            : nameEntry
-            ? String(nameEntry).trim()
-            : null;
+      const form = event.currentTarget;
+      const formData = new FormData(form);
+
+      const normalize = (value: FormDataEntryValue | null) =>
+        typeof value === "string"
+          ? value.trim()
+          : value
+          ? String(value).trim()
+          : "";
+
+      const email = normalize(formData.get("email"));
+      const name = normalize(formData.get("name")) || null;
+      const password = normalize(formData.get("password"));
+
+      if (!email || !password) {
+        setSubmitStatus({
+          type: "error",
+          message: "Email and password are required.",
+        });
+        return;
+      }
+
+      setIsSubmitting(true);
+      setSubmitStatus({
+        type: "info",
+        message: mode === "signup" ? "Creating your account..." : "Signing you in...",
+      });
+
+      try {
+        let sessionToken: string | null = null;
+
+        if (mode === "signup") {
+          const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              data: name ? { full_name: name } : undefined,
+            },
+          });
+
+          if (error) {
+            throw error;
+          }
+
+          sessionToken = data.session?.access_token ?? null;
+
+          if (!sessionToken) {
+            setSubmitStatus({
+              type: "success",
+              message:
+                "Account created! Check your email to verify before signing in.",
+            });
+            setIsSubmitting(false);
+            return;
+          }
+        } else {
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+
+          if (error) {
+            throw error;
+          }
+
+          sessionToken = data.session?.access_token ?? null;
+        }
 
         recordUserLogin({
           email,
           name,
           mode,
-          sessionToken: email ?? undefined,
+          sessionToken: sessionToken ?? undefined,
         });
-      } catch {
-        // ignore local persistence failures
+
+        setSubmitStatus({
+          type: "success",
+          message: "Success! Redirecting you...",
+        });
+
+        const target = redirectTo || "/";
+        setTimeout(() => {
+          try {
+            window.location.assign(target);
+          } catch {
+            window.location.href = target;
+          }
+        }, 400);
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Something went wrong while contacting Supabase.";
+        setSubmitStatus({
+          type: "error",
+          message,
+        });
+        setIsSubmitting(false);
       }
     },
-    [mode]
+    [isSubmitting, mode, redirectTo]
   );
 
   const submitLabel = mode === "signup" ? "Create account" : "Sign in";
@@ -102,11 +186,7 @@ export default function LoginPage() {
                 </p>
               </div>
 
-              <form
-                action={completeAuth}
-                className="mt-10 space-y-6"
-                onSubmit={handleSubmit}
-              >
+              <form className="mt-10 space-y-6" onSubmit={handleSubmit}>
                 <input type="hidden" name="redirect" value={redirectTo} />
 
                 {mode === "signup" && (
@@ -168,10 +248,26 @@ export default function LoginPage() {
 
                 <button
                   type="submit"
-                  className="relative inline-flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 px-4 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-cyan-500/30 transition hover:shadow-cyan-400/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200"
+                  className="relative inline-flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 px-4 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-cyan-500/30 transition hover:shadow-cyan-400/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200 disabled:opacity-80"
+                  disabled={isSubmitting}
+                  aria-busy={isSubmitting}
                 >
-                  {submitLabel}
+                  {isSubmitting ? "Please wait..." : submitLabel}
                 </button>
+
+                {submitStatus.message && (
+                  <p
+                    className={`text-sm ${
+                      submitStatus.type === "error"
+                        ? "text-rose-300"
+                        : submitStatus.type === "success"
+                        ? "text-emerald-300"
+                        : "text-slate-400"
+                    }`}
+                  >
+                    {submitStatus.message}
+                  </p>
+                )}
               </form>
 
               <div className="mt-8 space-y-3 text-center text-sm text-slate-400">
