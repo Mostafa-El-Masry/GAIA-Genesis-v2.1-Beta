@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { TLEvent, Era } from '../lib/types';
 import { addEvent, loadData } from '../lib/store';
+import { readJSON } from '@/lib/user-storage';
 import "../styles/event-form.css";
 
 type ApolloSection = { label: string; sectionId: string; topicId: string };
@@ -17,20 +18,19 @@ export default function EventForm({ onAdded }:{ onAdded:(e:TLEvent)=>void }){
   const [apolloOptions, setApolloOptions] = useState<ApolloSection[]>([]);
   const [apolloSel, setApolloSel] = useState('');
 
-  // Load Apollo sections from localStorage so we can deep-link
+  // Load Apollo sections from the per-user store so we can deep-link
   useEffect(()=>{
-    try {
-      const raw = localStorage.getItem('gaia_apollo_v1_notes');
-      if (!raw) return;
-      const data = JSON.parse(raw);
-      const opts: ApolloSection[] = [];
-      for (const t of data.topics || []) {
-        for (const s of t.sections || []) {
-          opts.push({ label: `${t.title} — ${s.heading}`, sectionId: s.id, topicId: t.id });
-        }
+    const data = readJSON<{ topics?: Array<{ title: string; id: string; sections?: Array<{ heading: string; id: string }> }> }>(
+      'gaia_apollo_v1_notes',
+      { topics: [] }
+    );
+    const opts: ApolloSection[] = [];
+    for (const t of data.topics || []) {
+      for (const s of t.sections || []) {
+        opts.push({ label: `${t.title} – ${s.heading}`, sectionId: s.id, topicId: t.id });
       }
-      setApolloOptions(opts);
-    } catch {}
+    }
+    setApolloOptions(opts);
   }, []);
 
   function submit(){

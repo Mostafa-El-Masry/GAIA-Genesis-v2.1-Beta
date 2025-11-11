@@ -4,7 +4,7 @@
  * ELEUTHIA crypto (browser-only)
  * - PBKDF2(SHA-256) -> AES-GCM(256)
  * - All data encrypted; only decrypted in memory
- * - Stored via localStorage in `eleu.meta` + `eleu.vault`
+ * - Stored via the per-user Supabase-backed store (`eleu.meta` + `eleu.vault`)
  */
 
 const textEncoder = new TextEncoder();

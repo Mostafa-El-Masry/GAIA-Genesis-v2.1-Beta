@@ -5,9 +5,8 @@ import { useMemo } from "react";
 import { useAuthSnapshot } from "@/lib/auth-client";
 import { normaliseEmail } from "@/lib/strings";
 import {
-  usePermissionSnapshot,
+  useCurrentPermissions,
   isCreatorAdmin,
-  getPermissionSet,
   type PermissionKey,
 } from "@/lib/permissions";
 
@@ -23,7 +22,7 @@ export default function PermissionGate({
   fallback,
 }: PermissionGateProps) {
   const { profile, status } = useAuthSnapshot();
-  const snapshot = usePermissionSnapshot();
+  const permissions = useCurrentPermissions();
   const email = profile?.email ?? status?.email ?? null;
   const normalised = normaliseEmail(email);
   const isAdmin = isCreatorAdmin(normalised);
@@ -31,11 +30,8 @@ export default function PermissionGate({
   const hasAccess = useMemo(() => {
     if (isAdmin) return true;
     if (!normalised) return false;
-    const fromSnapshot = snapshot[normalised];
-    if (fromSnapshot) return Boolean(fromSnapshot[permission]);
-    const fallbackSet = getPermissionSet(email);
-    return Boolean(fallbackSet[permission]);
-  }, [email, isAdmin, normalised, permission, snapshot]);
+    return Boolean(permissions[permission]);
+  }, [isAdmin, normalised, permission, permissions]);
 
   if (hasAccess) {
     return <>{children}</>;
@@ -55,4 +51,3 @@ export default function PermissionGate({
     </div>
   );
 }
-

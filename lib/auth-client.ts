@@ -2,17 +2,6 @@
 
 import type { Session } from "@supabase/supabase-js";
 
-/**
- * Lightweight local auth/profile store.
- *
- * Persists the following under localStorage:
- * - Profiles map (`gaia.auth.profiles`): keyed by lowercase email.
- * - Auth status (`gaia.auth.status`): tracks active session metadata.
- *
- * All helpers are defensive against SSR/non-browser environments and
- * swallow storage exceptions so they never break rendering.
- */
-
 export type AuthMode = "login" | "signup";
 
 export type StoredProfile = {
@@ -34,194 +23,50 @@ export type AuthStatus = {
   loggedOutAt?: string;
 };
 
-const PROFILES_KEY = "gaia.auth.profiles";
-const STATUS_KEY = "gaia.auth.status";
-
 type ProfileMap = Record<string, StoredProfile>;
 
-function getStorage(): Storage | null {
-  try {
-    if (typeof window === "undefined") return null;
-    return window.localStorage;
-  } catch {
-    return null;
-  }
-}
+const profiles: ProfileMap = {};
 
-function safeParse<T>(raw: string | null): T | null {
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as T;
-  } catch {
-    return null;
-  }
-}
-
-function readProfiles(storage: Storage | null = getStorage()): ProfileMap {
-  if (!storage) return {};
-  const parsed = safeParse<ProfileMap>(storage.getItem(PROFILES_KEY));
-  return parsed && typeof parsed === "object" ? parsed : {};
-}
-
-function writeProfiles(map: ProfileMap, storage: Storage | null = getStorage()) {
-  if (!storage) return;
-  try {
-    storage.setItem(PROFILES_KEY, JSON.stringify(map));
-  } catch {
-    // ignore quota/security errors
-  }
-}
-
-function readStatus(storage: Storage | null = getStorage()): AuthStatus | null {
-  if (!storage) return null;
-  return safeParse<AuthStatus>(storage.getItem(STATUS_KEY));
-}
-
-function writeStatus(status: AuthStatus, storage: Storage | null = getStorage()) {
-  if (!storage) return;
-  try {
-    storage.setItem(STATUS_KEY, JSON.stringify(status));
-  } catch {
-    // ignore storage failures
-  }
-}
+let activeProfileKey: string | null = null;
+let status: AuthStatus | null = null;
 
 function dispatch(name: string, detail: unknown) {
-  try {
-    if (typeof window === "undefined") return;
-    window.dispatchEvent(new CustomEvent(name, { detail }));
-  } catch {
-    // ignore dispatch errors
-  }
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(name, { detail }));
 }
 
-function normaliseEmail(email: string | null | undefined): {
-  original: string | null;
-  key: string | null;
-} {
-  if (!email) return { original: null, key: null };
+type NormalisedEmail = {
+  key: string;
+  original: string;
+};
+
+function normaliseEmail(email: string | null | undefined): NormalisedEmail | null {
+  if (!email) return null;
   const trimmed = email.trim();
-  if (!trimmed) return { original: null, key: null };
+  if (!trimmed) return null;
   return { original: trimmed, key: trimmed.toLowerCase() };
 }
 
-export function recordUserLogin(input: {
-  email: string | null;
-  name?: string | null;
-  mode: AuthMode;
-  sessionToken?: string | null;
-}): StoredProfile | null {
-  const storage = getStorage();
-  if (!storage) return null;
-
-  const { original: email, key } = normaliseEmail(input.email);
-  if (!email || !key) return null;
-
-  const now = new Date().toISOString();
-  const profiles = readProfiles(storage);
-  const existing = profiles[key];
-
-  const profile: StoredProfile = {
-    id: existing?.id ?? key,
-    email,
-    name: input.name?.trim() || existing?.name || null,
-    createdAt: existing?.createdAt ?? now,
-    updatedAt: now,
-    lastLoginAt: now,
-    lastLogoutAt: existing?.lastLogoutAt,
-    lastMode: input.mode,
-    sessionToken: input.sessionToken ?? email,
-  };
-
-  profiles[key] = { ...existing, ...profile };
-  writeProfiles(profiles, storage);
-
-  const status: AuthStatus = {
-    email,
-    session: input.sessionToken ?? email,
-    loggedInAt: now,
-    loggedOutAt: undefined,
-  };
-  writeStatus(status, storage);
-
-  dispatch("gaia:auth:login", { profile, status });
-  dispatch("storage", { key: STATUS_KEY });
-  return profile;
+function ensureProfile(key: string, value: StoredProfile) {
+  profiles[key] = value;
 }
 
-export function recordUserLogout(explicitEmail?: string | null): AuthStatus | null {
-  const storage = getStorage();
-  if (!storage) return null;
-
-  const current = readStatus(storage);
-  const { original: email, key } = normaliseEmail(
-    explicitEmail ?? current?.email,
-  );
-
-  const now = new Date().toISOString();
-  if (key) {
-    const profiles = readProfiles(storage);
-    const existing = profiles[key];
-    if (existing) {
-      profiles[key] = {
-        ...existing,
-        updatedAt: now,
-        lastLogoutAt: now,
-      };
-      writeProfiles(profiles, storage);
+function emitStorageEvents(keys: string[]) {
+  if (typeof window === "undefined") return;
+  keys.forEach((key) => {
+    try {
+      window.dispatchEvent(
+        new StorageEvent("storage", { key, newValue: null, oldValue: null })
+      );
+    } catch {
+      dispatch("storage", { key });
     }
-  }
-
-  const status: AuthStatus = {
-    email: null,
-    session: null,
-    loggedOutAt: now,
-  };
-  writeStatus(status, storage);
-
-  dispatch("gaia:auth:logout", { previousEmail: email });
-  dispatch("storage", { key: STATUS_KEY });
-  return status;
-}
-
-export function getActiveStatus(): AuthStatus | null {
-  return readStatus();
-}
-
-export function getActiveProfile(): StoredProfile | null {
-  const status = readStatus();
-  if (!status?.email) return null;
-  const { key } = normaliseEmail(status.email);
-  if (!key) return null;
-  const profiles = readProfiles();
-  return profiles[key] ?? null;
-}
-
-export function listProfiles(): StoredProfile[] {
-  const profiles = readProfiles();
-  return Object.values(profiles);
-}
-
-export function getProfileByEmail(email: string | null | undefined): StoredProfile | null {
-  const { key } = normaliseEmail(email);
-  if (!key) return null;
-  const profiles = readProfiles();
-  return profiles[key] ?? null;
-}
-
-export function isLoggedIn(): boolean {
-  const status = readStatus();
-  return !!(status && status.email && status.session);
+  });
 }
 
 function deriveNameFromSession(session: Session): string | null {
-  const metadata = (session.user?.user_metadata ??
-    {}) as Record<string, unknown>;
-  const candidates = [
-    metadata.full_name,
-    metadata.name,
-    session.user?.email,
-  ];
+  const metadata = (session.user?.user_metadata ?? {}) as Record<string, unknown>;
+  const candidates = [metadata.full_name, metadata.name, session.user?.email];
   for (const value of candidates) {
     if (typeof value === "string" && value.trim()) {
       return value.trim();
@@ -230,38 +75,109 @@ function deriveNameFromSession(session: Session): string | null {
   return null;
 }
 
-export function ensureAuthFromSupabaseSession(
-  session: Session | null
-): boolean {
+export function recordUserLogin(input: {
+  email: string | null;
+  name?: string | null;
+  mode: AuthMode;
+  sessionToken?: string | null;
+}): StoredProfile | null {
+  const normalised = normaliseEmail(input.email);
+  if (!normalised) return null;
+
+  const now = new Date().toISOString();
+  const existing = profiles[normalised.key];
+
+  const profile: StoredProfile = {
+    id: existing?.id ?? normalised.key,
+    email: normalised.original,
+    name: input.name?.trim() || existing?.name || null,
+    createdAt: existing?.createdAt ?? now,
+    updatedAt: now,
+    lastLoginAt: now,
+    lastLogoutAt: existing?.lastLogoutAt,
+    lastMode: input.mode,
+    sessionToken: input.sessionToken ?? null,
+  };
+
+  ensureProfile(normalised.key, profile);
+
+  status = {
+    email: normalised.original,
+    session: input.sessionToken ?? status?.session ?? null,
+    loggedInAt: now,
+  };
+  activeProfileKey = normalised.key;
+
+  dispatch("gaia:auth:login", { profile, status });
+  emitStorageEvents(["gaia.auth.profiles", "gaia.auth.status"]);
+  return profile;
+}
+
+export function recordUserLogout(explicitEmail?: string | null): AuthStatus | null {
+  const normalised = normaliseEmail(explicitEmail ?? status?.email);
+  if (normalised?.key && profiles[normalised.key]) {
+    profiles[normalised.key] = {
+      ...profiles[normalised.key],
+      lastLogoutAt: new Date().toISOString(),
+      sessionToken: null,
+    };
+  }
+  const snapshot: AuthStatus | null = status
+    ? { ...status, session: null, loggedOutAt: new Date().toISOString() }
+    : null;
+  status = snapshot;
+  activeProfileKey = null;
+  dispatch("gaia:auth:logout", { previousEmail: normalised?.original ?? null });
+  emitStorageEvents(["gaia.auth.profiles", "gaia.auth.status"]);
+  return snapshot;
+}
+
+export function getActiveStatus(): AuthStatus | null {
+  return status;
+}
+
+export function getActiveProfile(): StoredProfile | null {
+  if (!activeProfileKey) return null;
+  return profiles[activeProfileKey] ?? null;
+}
+
+export function listProfiles(): StoredProfile[] {
+  return Object.values(profiles);
+}
+
+export function getProfileByEmail(email: string | null | undefined): StoredProfile | null {
+  const normalised = normaliseEmail(email);
+  if (!normalised) return null;
+  return profiles[normalised.key] ?? null;
+}
+
+export function isLoggedIn(): boolean {
+  return Boolean(status?.email && status?.session);
+}
+
+export function ensureAuthFromSupabaseSession(session: Session | null): boolean {
   if (!session || !session.user) {
-    if (isLoggedIn()) {
+    if (status?.email || status?.session) {
       recordUserLogout();
       return true;
     }
     return false;
   }
 
-  const email = session.user.email ?? null;
-  if (!email) return false;
+  const normalised = normaliseEmail(session.user.email ?? null);
+  if (!normalised) return false;
 
-  const { original } = normaliseEmail(email);
-  if (!original) return false;
-
-  const current = getActiveStatus();
-  if (
-    current?.email === original &&
-    current?.session ===
-      (session.access_token ?? session.refresh_token ?? null)
-  ) {
+  const currentToken = session.access_token ?? session.refresh_token ?? null;
+  if (status?.email === normalised.original && status?.session === currentToken) {
     return false;
   }
 
   const name = deriveNameFromSession(session);
   recordUserLogin({
-    email: original,
+    email: normalised.original,
     name,
     mode: "login",
-    sessionToken: session.access_token ?? session.refresh_token ?? email,
+    sessionToken: currentToken,
   });
   return true;
 }
@@ -271,10 +187,6 @@ export type UseAuthSnapshot = {
   status: AuthStatus | null;
 };
 
-/**
- * React hook to subscribe to auth state changes.
- * Can be used in client components to drive UI.
- */
 export function useAuthSnapshot(): UseAuthSnapshot {
   const { useEffect, useState } = require("react") as typeof import("react");
   const [snapshot, setSnapshot] = useState<UseAuthSnapshot>(() => ({
@@ -290,13 +202,16 @@ export function useAuthSnapshot(): UseAuthSnapshot {
       });
     }
 
-    if (typeof window === "undefined") return undefined;
+    if (typeof window === "undefined") {
+      return () => {};
+    }
 
     const handler = () => update();
+
     window.addEventListener("gaia:auth:login", handler);
     window.addEventListener("gaia:auth:logout", handler);
     window.addEventListener("storage", handler);
-    update();
+
     return () => {
       window.removeEventListener("gaia:auth:login", handler);
       window.removeEventListener("gaia:auth:logout", handler);
@@ -306,4 +221,3 @@ export function useAuthSnapshot(): UseAuthSnapshot {
 
   return snapshot;
 }
-

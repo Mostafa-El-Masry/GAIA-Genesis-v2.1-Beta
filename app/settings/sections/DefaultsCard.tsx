@@ -1,5 +1,7 @@
 'use client';
 
+import { removeItem } from '@/lib/user-storage';
+
 export default function DefaultsCard(){
   function resetSettings(){
     const keys = [
@@ -7,7 +9,7 @@ export default function DefaultsCard(){
       'settings_landing','settings_introStyle',
       'settings_reduceMotion','settings_highContrast','settings_underlineLinks',
     ];
-    for(const k of keys) localStorage.removeItem(k);
+    for(const k of keys) removeItem(k);
     alert('Settings reset (kept your data).');
   }
 

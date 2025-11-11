@@ -84,27 +84,20 @@ const sanitizeLabel = (label?: string | null) => {
 };
 
 function readStore(): PracticeStoreData {
-  if (typeof window === "undefined") return emptyStore();
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return emptyStore();
-    const parsed = JSON.parse(raw) as PracticeStoreData;
-    if (!parsed || typeof parsed !== "object") {
-      return emptyStore();
-    }
-    if (parsed.version !== VERSION) {
-      return {
-        version: VERSION,
-        topics: parsed.topics ?? {},
-      };
-    }
+  const parsed = readJSON<PracticeStoreData | null>(STORAGE_KEY, null);
+  if (!parsed || typeof parsed !== "object") {
+    return emptyStore();
+  }
+  if (parsed.version !== VERSION) {
     return {
       version: VERSION,
       topics: parsed.topics ?? {},
     };
-  } catch {
-    return emptyStore();
   }
+  return {
+    version: VERSION,
+    topics: parsed.topics ?? {},
+  };
 }
 
 function getStore(): PracticeStoreData {
@@ -118,7 +111,7 @@ function persistStore(store: PracticeStoreData, topicId?: string) {
   if (typeof window === "undefined") return;
   memoryStore = store;
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+    writeJSON(STORAGE_KEY, store);
     const detail: PracticeEventDetail | undefined = topicId
       ? { topicId }
       : undefined;
@@ -202,8 +195,11 @@ export function usePracticeTopic(topicId: string) {
   });
 
   const refresh = useCallback(() => {
-    const topic = ensureTopic(getStore(), topicId);
-    setSnapshot(cloneTopic(topic));
+    (async () => {
+      await waitForUserStorage();
+      const topic = ensureTopic(getStore(), topicId);
+      setSnapshot(cloneTopic(topic));
+    })();
   }, [topicId]);
 
   useEffect(() => {
@@ -222,9 +218,16 @@ export function usePracticeTopic(topicId: string) {
         refresh();
       }
     }
+    const unsubscribe = subscribe(({ key }) => {
+      if (key === STORAGE_KEY) {
+        memoryStore = null;
+        refresh();
+      }
+    });
     window.addEventListener("storage", handleStorage);
     window.addEventListener(EVENT_KEY, handleCustom as EventListener);
     return () => {
+      unsubscribe();
       window.removeEventListener("storage", handleStorage);
       window.removeEventListener(EVENT_KEY, handleCustom as EventListener);
     };

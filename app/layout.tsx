@@ -64,36 +64,6 @@ export default async function RootLayout({
   return (
     <html lang="en" data-theme={initialTheme} data-gaia-theme={initialTheme}>
       <body className="overflow-x-hidden">
-        {/* Inline script to synchronously apply stored theme on initial load.
-            This helps avoid theme flicker / reset when navigating or refreshing.
-            It prefers localStorage, then cookie, then the server-picked initialTheme. */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(() => {
-  try {
-    var primaryKey = 'gaia_theme';
-    var legacyKey = 'gaia.theme';
-    var t = null;
-    try { t = localStorage.getItem(primaryKey); } catch (e) {}
-    if (!t) {
-      try { t = localStorage.getItem(legacyKey); } catch (e) {}
-    }
-    if (!t) {
-      var m = document.cookie.match('(?:^|; )' + legacyKey + '=([^;]+)');
-      if (m && m[1]) {
-        try { t = decodeURIComponent(m[1]); } catch (e) { t = m[1]; }
-      }
-    }
-    if (!t) t = '${initialTheme}';
-    if (t && document && document.documentElement) {
-      document.documentElement.setAttribute('data-theme', t);
-      document.documentElement.setAttribute('data-gaia-theme', t);
-      try { localStorage.setItem(primaryKey, t); } catch (e) {}
-    }
-  } catch (e) {}
-})();`,
-          }}
-        />
         <DesignProvider>
           <AuthHydrator />
           <AppBar />

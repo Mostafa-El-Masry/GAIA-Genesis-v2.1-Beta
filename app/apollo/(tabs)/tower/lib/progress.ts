@@ -1,6 +1,7 @@
-'use client';
+"use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { readJSON, subscribe, waitForUserStorage, writeJSON } from "@/lib/user-storage";
 
 type Progress = Record<string, boolean>;
 const KEY = "gaia.tower.progress";
@@ -11,25 +12,26 @@ const KEY = "gaia.tower.progress";
  * - Emits "gaia:tower:progress" on change
  */
 function read(): Progress {
-  try {
-    const raw = localStorage.getItem(KEY);
-    return raw ? (JSON.parse(raw) as Progress) : {};
-  } catch {
-    return {};
-  }
+  return readJSON<Progress>(KEY, {});
 }
 
 function write(p: Progress) {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(p));
-  } catch {}
+  writeJSON(KEY, p);
 }
 
 export function useTowerProgress() {
   const [progress, setProgress] = useState<Progress>({});
 
   useEffect(() => {
-    setProgress(read());
+    let cancelled = false;
+    (async () => {
+      await waitForUserStorage();
+      if (cancelled) return;
+      setProgress(read());
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -38,8 +40,20 @@ export function useTowerProgress() {
         setProgress(e.newValue ? (JSON.parse(e.newValue) as Progress) : {});
       }
     }
+    const unsubscribe = subscribe(({ key, value }) => {
+      if (key === KEY) {
+        try {
+          setProgress(value ? (JSON.parse(value) as Progress) : {});
+        } catch {
+          setProgress({});
+        }
+      }
+    });
     window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    return () => {
+      unsubscribe();
+      window.removeEventListener("storage", onStorage);
+    };
   }, []);
 
   const isUnlocked = useCallback((nodeId: string) => !!progress[nodeId], [progress]);

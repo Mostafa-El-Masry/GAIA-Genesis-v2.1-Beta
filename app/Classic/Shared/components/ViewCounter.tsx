@@ -1,14 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { readJSON, writeJSON } from '@/lib/user-storage';
 
 const KEY = "gaia.classic.views";
 
 function readAll(): Record<string, number> {
-  try { return JSON.parse(localStorage.getItem(KEY) || "{}"); } catch { return {}; }
+  return readJSON<Record<string, number>>(KEY, {});
 }
 function writeAll(obj: Record<string, number>) {
-  try { localStorage.setItem(KEY, JSON.stringify(obj)); } catch {}
+  writeJSON(KEY, obj);
 }
 
 export default function ViewCounter({ path }: { path: string }) {

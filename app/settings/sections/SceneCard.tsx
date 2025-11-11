@@ -2,20 +2,28 @@
 
 import { useEffect, useState } from 'react';
 
+import { readJSON, waitForUserStorage, writeJSON } from '@/lib/user-storage';
+
 export default function SceneCard(){
   const [landing, setLanding] = useState<'/'|'/gallery'|'/dashboard'|'/search'>('/');
   const [introStyle, setIntroStyle] = useState<'gaia-only'|'gaia-glass'>('gaia-glass');
 
   useEffect(()=>{
-    try{
-      const l = localStorage.getItem('settings_landing'); if (l) setLanding(JSON.parse(l));
-      const i = localStorage.getItem('settings_introStyle'); if (i) setIntroStyle(JSON.parse(i));
-    }catch{}
+    let cancelled = false;
+    (async () => {
+      await waitForUserStorage();
+      if (cancelled) return;
+      setLanding(readJSON('settings_landing', landing));
+      setIntroStyle(readJSON('settings_introStyle', introStyle));
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(()=>{
-    localStorage.setItem('settings_landing', JSON.stringify(landing));
-    localStorage.setItem('settings_introStyle', JSON.stringify(introStyle));
+    writeJSON('settings_landing', landing);
+    writeJSON('settings_introStyle', introStyle);
   }, [landing, introStyle]);
 
   return (

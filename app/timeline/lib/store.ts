@@ -1,32 +1,31 @@
-'use client';
+"use client";
 
+import { readJSON, writeJSON } from "@/lib/user-storage";
 import type { TimelineData, TimelinePrefs, TLEvent } from './types';
 
 const DATA_KEY = 'gaia_timeline_v1_events';
 const PREF_KEY = 'gaia_timeline_v1_prefs';
 
 export function loadData(): TimelineData {
-  try {
-    const raw = localStorage.getItem(DATA_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return { events: [] };
+  return readJSON<TimelineData>(DATA_KEY, { events: [] });
 }
 
 export function saveData(d: TimelineData) {
-  localStorage.setItem(DATA_KEY, JSON.stringify(d));
+  writeJSON(DATA_KEY, d);
 }
 
 export function loadPrefs(): TimelinePrefs {
-  try {
-    const raw = localStorage.getItem(PREF_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return { zoom: "cosmic", showCosmic: true, showHuman: true, showPersonal: true, sort: "chronological" };
+  return readJSON<TimelinePrefs>(PREF_KEY, {
+    zoom: "cosmic",
+    showCosmic: true,
+    showHuman: true,
+    showPersonal: true,
+    sort: "chronological",
+  });
 }
 
 export function savePrefs(p: TimelinePrefs) {
-  localStorage.setItem(PREF_KEY, JSON.stringify(p));
+  writeJSON(PREF_KEY, p);
 }
 
 export function addEvent(d: TimelineData, ev: Omit<TLEvent, "id" | "createdAt">): TLEvent {

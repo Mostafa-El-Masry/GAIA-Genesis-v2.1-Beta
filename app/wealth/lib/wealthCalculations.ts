@@ -192,17 +192,23 @@ export function calculatePlanProgress(
 }
 
 /**
- * Calculate wealth snapshot from stored keys
+ * Calculate wealth snapshot from a serialized storage snapshot.
  */
-export function calculateWealthSnapshot(wealthKeys: string[]): number {
+export function calculateWealthSnapshot(
+  snapshot: Record<string, string | null>
+): number {
   let wealthSnapshot = 0;
-  for (const k of wealthKeys) {
+  for (const raw of Object.values(snapshot)) {
+    if (!raw) continue;
     try {
-      const v = JSON.parse(localStorage.getItem(k) || "0");
+      const v = JSON.parse(raw);
       if (typeof v === "number") wealthSnapshot += v;
-      if (v && typeof v === "object" && typeof v.balance === "number")
+      if (v && typeof v === "object" && typeof v.balance === "number") {
         wealthSnapshot += v.balance;
-      if (v && v.total) wealthSnapshot += Number(v.total) || 0;
+      }
+      if (v && v.total) {
+        wealthSnapshot += Number(v.total) || 0;
+      }
     } catch {
       continue;
     }

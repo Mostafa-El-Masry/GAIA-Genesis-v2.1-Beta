@@ -1,110 +1,30 @@
 "use client";
 
 import { useEffect, useState } from "react";
+
+import {
+  PERMISSION_KEYS,
+  type PermissionKey,
+  type PermissionSet,
+  getCreatorAdminEmail,
+  PERMISSION_STORAGE_KEY,
+  createAdminPermissionSet as sharedAdminSet,
+  createEmptyPermissionSet as sharedEmptySet,
+  ensurePermissionShape,
+} from "@/config/permissions";
 import { normaliseEmail } from "./strings";
+import {
+  readJSON,
+  subscribe,
+  waitForUserStorage,
+} from "./user-storage";
 
-const PERMISSION_KEYS = [
-  "apollo",
-  "archives",
-  "classic",
-  "dashboard",
-  "eleuthia",
-  "gallery",
-  "health",
-  "labs",
-  "locked",
-  "timeline",
-  "wealth",
-  "settings",
-  "settingsAppearance",
-  "settingsGallery",
-  "settingsPermissions",
-] as const;
+export type { PermissionSet };
 
-export type PermissionKey = (typeof PERMISSION_KEYS)[number];
+const STORAGE_KEY = PERMISSION_STORAGE_KEY;
+const ADMIN_EMAIL = getCreatorAdminEmail();
 
-export type PermissionSet = Record<PermissionKey, boolean>;
-
-type PermissionMap = Record<string, PermissionSet>;
-
-const STORAGE_KEY = "gaia.auth.permissions";
-const DEFAULT_ADMIN_EMAIL = "mostafa.abdelfattah2021@gmail.com";
-const ADMIN_EMAIL = (
-  process.env.NEXT_PUBLIC_CREATOR_EMAIL ||
-  process.env.NEXT_PUBLIC_CREATOR_ADMIN_EMAIL ||
-  DEFAULT_ADMIN_EMAIL
-)
-  .trim()
-  .toLowerCase();
-
-function getStorage(): Storage | null {
-  try {
-    if (typeof window === "undefined") return null;
-    return window.localStorage;
-  } catch {
-    return null;
-  }
-}
-
-function safeParse<T>(raw: string | null): T | null {
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as T;
-  } catch {
-    return null;
-  }
-}
-
-function normaliseKey(email: string | null | undefined): string | null {
-  const normalised = normaliseEmail(email);
-  return normalised ? normalised.toLowerCase() : null;
-}
-
-function emptyPermissionSet(): PermissionSet {
-  return PERMISSION_KEYS.reduce<PermissionSet>((acc, key) => {
-    acc[key] = false;
-    return acc;
-  }, {} as PermissionSet);
-}
-
-function adminPermissionSet(): PermissionSet {
-  return PERMISSION_KEYS.reduce<PermissionSet>((acc, key) => {
-    acc[key] = true;
-    return acc;
-  }, {} as PermissionSet);
-}
-
-function ensureShape(input: Partial<PermissionSet> | null | undefined): PermissionSet {
-  const base = emptyPermissionSet();
-  if (!input) return base;
-  for (const key of PERMISSION_KEYS) {
-    base[key] = Boolean(input[key]);
-  }
-  return base;
-}
-
-function readPermissions(storage: Storage | null = getStorage()): PermissionMap {
-  if (!storage) return {};
-  const parsed = safeParse<PermissionMap>(storage.getItem(STORAGE_KEY));
-  if (!parsed || typeof parsed !== "object") return {};
-  const output: PermissionMap = {};
-  for (const [key, value] of Object.entries(parsed)) {
-    output[key] = ensureShape(value);
-  }
-  return output;
-}
-
-function writePermissions(
-  map: PermissionMap,
-  storage: Storage | null = getStorage(),
-) {
-  if (!storage) return;
-  try {
-    storage.setItem(STORAGE_KEY, JSON.stringify(map));
-  } catch {
-    // ignore storage quota or security errors
-  }
-}
+let cachedPermissions: PermissionSet = sharedEmptySet();
 
 function dispatchPermissionsEvent(detail: unknown) {
   try {
@@ -115,53 +35,33 @@ function dispatchPermissionsEvent(detail: unknown) {
   }
 }
 
+async function hydrate() {
+  await waitForUserStorage();
+  cachedPermissions = ensurePermissionShape(
+    readJSON(STORAGE_KEY, sharedEmptySet())
+  );
+  dispatchPermissionsEvent({ permissions: cachedPermissions });
+}
+
+if (typeof window !== "undefined") {
+  void hydrate();
+  subscribe(({ key, value }) => {
+    if (key !== STORAGE_KEY) return;
+    try {
+      const parsed = value ? (JSON.parse(value) as Partial<PermissionSet>) : null;
+      cachedPermissions = ensurePermissionShape(parsed);
+      dispatchPermissionsEvent({ permissions: cachedPermissions });
+    } catch {
+      cachedPermissions = sharedEmptySet();
+      dispatchPermissionsEvent({ permissions: cachedPermissions });
+    }
+  });
+}
+
 export function isCreatorAdmin(email: string | null | undefined): boolean {
-  const key = normaliseKey(email);
-  if (!key) return false;
-  return key === ADMIN_EMAIL;
-}
-
-export function listPermissionMap(): PermissionMap {
-  const map = readPermissions();
-  map[ADMIN_EMAIL] = adminPermissionSet();
-  return map;
-}
-
-export function getPermissionSet(email: string | null | undefined): PermissionSet {
-  const key = normaliseKey(email);
-  if (!key) return emptyPermissionSet();
-  if (key === ADMIN_EMAIL) return adminPermissionSet();
-  const permissions = readPermissions();
-  return ensureShape(permissions[key]);
-}
-
-export function setPermissionSet(
-  email: string | null | undefined,
-  updates: PermissionSet,
-) {
-  const key = normaliseKey(email);
-  if (!key || key === ADMIN_EMAIL) return;
-  const storage = getStorage();
-  const current = readPermissions(storage);
-  current[key] = ensureShape(updates);
-  writePermissions(current, storage);
-  dispatchPermissionsEvent({ email: key, permissions: current[key] });
-}
-
-export function setPermissionFlag(
-  email: string | null | undefined,
-  permission: PermissionKey,
-  value: boolean,
-) {
-  const key = normaliseKey(email);
-  if (!key || key === ADMIN_EMAIL) return;
-  const storage = getStorage();
-  const current = readPermissions(storage);
-  const existing = ensureShape(current[key]);
-  existing[permission] = value;
-  current[key] = existing;
-  writePermissions(current, storage);
-  dispatchPermissionsEvent({ email: key, permissions: existing });
+  const normalised = normaliseEmail(email);
+  if (!normalised) return false;
+  return normalised.toLowerCase() === ADMIN_EMAIL;
 }
 
 export function getAdminEmail(): string {
@@ -172,28 +72,43 @@ export function getAvailablePermissionKeys(): PermissionKey[] {
   return [...PERMISSION_KEYS];
 }
 
-export function createEmptyPermissionSet(): PermissionSet {
-  return emptyPermissionSet();
+export const createEmptyPermissionSet = sharedEmptySet;
+
+export const createAdminPermissionSet = sharedAdminSet;
+
+export function getCachedPermissionSet(): PermissionSet {
+  return { ...cachedPermissions };
 }
 
-export function createAdminPermissionSet(): PermissionSet {
-  return adminPermissionSet();
-}
-
-export function usePermissionSnapshot(): PermissionMap {
-  const [snapshot, setSnapshot] = useState<PermissionMap>(() => listPermissionMap());
+export function useCurrentPermissions(): PermissionSet {
+  const [snapshot, setSnapshot] = useState<PermissionSet>(() => getCachedPermissionSet());
 
   useEffect(() => {
-    if (typeof window === "undefined") return undefined;
-    const update = () => setSnapshot(listPermissionMap());
-    window.addEventListener("gaia:permissions:update", update);
-    window.addEventListener("storage", update);
-    update();
+    const handler = () => setSnapshot(getCachedPermissionSet());
+    if (typeof window === "undefined") return () => {};
+    window.addEventListener("gaia:permissions:update", handler);
     return () => {
-      window.removeEventListener("gaia:permissions:update", update);
-      window.removeEventListener("storage", update);
+      window.removeEventListener("gaia:permissions:update", handler);
     };
   }, []);
 
   return snapshot;
+}
+
+export async function saveUserPermissionSet(input: {
+  userId: string;
+  permissions: PermissionSet;
+}): Promise<void> {
+  const response = await fetch("/api/admin/permissions", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(
+      detail || "Unable to update permissions. Check your admin credentials."
+    );
+  }
 }

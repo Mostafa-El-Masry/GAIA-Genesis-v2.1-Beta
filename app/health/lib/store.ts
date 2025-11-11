@@ -1,5 +1,6 @@
-'use client';
+"use client";
 
+import { readJSON, writeJSON } from "@/lib/user-storage";
 import type {
   HealthRecord, Habit, HealthPrefs, InsulinEntry, BodyMetric,
   ExercisePlan, WorkoutEntry
@@ -25,10 +26,9 @@ export function nid(): string {
 }
 
 function get<T>(key: string, fallback: T): T {
-  try { const raw = localStorage.getItem(key); if (raw) return JSON.parse(raw) as T; } catch {}
-  return fallback;
+  return readJSON<T>(key, fallback);
 }
-function set<T>(key: string, value: T) { localStorage.setItem(key, JSON.stringify(value)); }
+function set<T>(key: string, value: T) { writeJSON(key, value); }
 
 // Records
 export function loadRecords(): HealthRecord[] { return get<HealthRecord[]>(REC_KEY, []); }
@@ -145,13 +145,13 @@ export async function importAll(apply:(data:any)=>void) {
       const text = await f.text();
       try{
         const obj = JSON.parse(text);
-        if (obj.records) localStorage.setItem(REC_KEY, JSON.stringify(obj.records));
-        if (obj.habits) localStorage.setItem(HAB_KEY, JSON.stringify(obj.habits));
-        if (obj.prefs) localStorage.setItem(PREF_KEY, JSON.stringify(obj.prefs));
-        if (obj.insulin) localStorage.setItem(INS_KEY, JSON.stringify(obj.insulin));
-        if (obj.body) localStorage.setItem(BODY_KEY, JSON.stringify(obj.body));
-        if (obj.exercisePlans) localStorage.setItem(PLANS_KEY, JSON.stringify(obj.exercisePlans));
-        if (obj.workoutEntries) localStorage.setItem(LOGS_KEY, JSON.stringify(obj.workoutEntries));
+        if (obj.records) writeJSON(REC_KEY, obj.records);
+        if (obj.habits) writeJSON(HAB_KEY, obj.habits);
+        if (obj.prefs) writeJSON(PREF_KEY, obj.prefs);
+        if (obj.insulin) writeJSON(INS_KEY, obj.insulin);
+        if (obj.body) writeJSON(BODY_KEY, obj.body);
+        if (obj.exercisePlans) writeJSON(PLANS_KEY, obj.exercisePlans);
+        if (obj.workoutEntries) writeJSON(LOGS_KEY, obj.workoutEntries);
         apply(obj);
       }catch{}
       resolve();

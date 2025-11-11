@@ -1,5 +1,6 @@
-'use client';
+"use client";
 
+import { readJSON, writeJSON } from "@/lib/user-storage";
 import type { LabProject, LabCategory } from './types';
 
 const PROJ_KEY = 'gaia_labs_projects_v1';
@@ -18,10 +19,9 @@ export function slugify(s: string): string {
 
 // LocalStorage helpers
 function get<T>(key: string, fallback: T): T {
-  try { const raw = localStorage.getItem(key); if (raw) return JSON.parse(raw) as T; } catch {}
-  return fallback;
+  return readJSON<T>(key, fallback);
 }
-function set<T>(key: string, value: T) { localStorage.setItem(key, JSON.stringify(value)); }
+function set<T>(key: string, value: T) { writeJSON(key, value); }
 
 export function loadProjects(): LabProject[] {
   return get<LabProject[]>(PROJ_KEY, []);

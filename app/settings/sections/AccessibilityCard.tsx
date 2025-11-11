@@ -2,23 +2,31 @@
 
 import { useEffect, useState } from 'react';
 
+import { readJSON, waitForUserStorage, writeJSON } from '@/lib/user-storage';
+
 export default function AccessibilityCard(){
   const [reduceMotion, setReduceMotion] = useState(false);
   const [highContrast, setHighContrast] = useState(false);
   const [underlineLinks, setUnderlineLinks] = useState(false);
 
   useEffect(()=>{
-    try{
-      const r = localStorage.getItem('settings_reduceMotion'); if (r) setReduceMotion(JSON.parse(r));
-      const hc = localStorage.getItem('settings_highContrast'); if (hc) setHighContrast(JSON.parse(hc));
-      const ul = localStorage.getItem('settings_underlineLinks'); if (ul) setUnderlineLinks(JSON.parse(ul));
-    }catch{}
+    let cancelled = false;
+    (async () => {
+      await waitForUserStorage();
+      if (cancelled) return;
+      setReduceMotion(readJSON('settings_reduceMotion', reduceMotion));
+      setHighContrast(readJSON('settings_highContrast', highContrast));
+      setUnderlineLinks(readJSON('settings_underlineLinks', underlineLinks));
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(()=>{
-    localStorage.setItem('settings_reduceMotion', JSON.stringify(reduceMotion));
-    localStorage.setItem('settings_highContrast', JSON.stringify(highContrast));
-    localStorage.setItem('settings_underlineLinks', JSON.stringify(underlineLinks));
+    writeJSON('settings_reduceMotion', reduceMotion);
+    writeJSON('settings_highContrast', highContrast);
+    writeJSON('settings_underlineLinks', underlineLinks);
   }, [reduceMotion, highContrast, underlineLinks]);
 
   return (

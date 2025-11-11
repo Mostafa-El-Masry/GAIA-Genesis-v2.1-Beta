@@ -2,13 +2,27 @@
 
 import { useEffect, useState } from 'react';
 
+import { getItem, removeItem, setItem, waitForUserStorage } from '@/lib/user-storage';
+
 export default function PrivacyCard(){
-  const [pin, setPin] = useState(localStorage.getItem('settings_lock_pin') || '');
+  const [pin, setPin] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      await waitForUserStorage();
+      if (cancelled) return;
+      setPin(getItem('settings_lock_pin') ?? '');
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function savePin(){
-    if (!pin) { localStorage.removeItem('settings_lock_pin'); alert('PIN cleared'); return; }
+    if (!pin) { removeItem('settings_lock_pin'); alert('PIN cleared'); return; }
     if (!/^\d{4}$/.test(pin)) { alert('PIN must be 4 digits'); return; }
-    localStorage.setItem('settings_lock_pin', pin);
+    setItem('settings_lock_pin', pin);
     alert('PIN saved');
   }
 

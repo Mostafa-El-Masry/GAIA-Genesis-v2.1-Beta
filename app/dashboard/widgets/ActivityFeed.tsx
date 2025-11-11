@@ -2,33 +2,46 @@
 
 import { useEffect, useState } from 'react';
 
+import { snapshotStorage, waitForUserStorage } from '@/lib/user-storage';
+
 /**
  * Builds a tiny recent feed using any *createdAt/updatedAt/date* fields it finds.
  */
-function lsKeys(){ const out:string[]=[]; try{ for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i); if(k) out.push(k);} }catch{} return out; }
-function readJSON(key:string){ try{ const r=localStorage.getItem(key); return r?JSON.parse(r):null; }catch{ return null; } }
 
 export default function ActivityFeed(){
   const [rows, setRows] = useState<{key:string, when:number, route?:string}[]>([]);
 
   useEffect(()=>{
-    const items:any[] = [];
-    for(const k of lsKeys()){
-      const v = readJSON(k);
-      const when = new Date(v?.updatedAt || v?.createdAt || v?.date || 0).getTime();
-      if (when>0){
-        let route: string | undefined = undefined;
-        if (k.startsWith('apollo_')) route='/apollo';
-        else if (k.startsWith('gallery_')) route='/gallery';
-        else if (k.startsWith('wealth_')) route='/wealth';
-        else if (k.startsWith('health_')) route='/health';
-        else if (k.startsWith('timeline_')) route='/timeline';
-        else if (k.startsWith('labs_')) route='/labs';
-        items.push({ key:k, when, route });
+    let cancelled = false;
+    (async () => {
+      await waitForUserStorage();
+      if (cancelled) return;
+      const snapshot = snapshotStorage();
+      const items:any[] = [];
+      for(const [k, raw] of Object.entries(snapshot)){
+        if (!raw) continue;
+        let v:any = null;
+        try{
+          v = JSON.parse(raw);
+        }catch{
+          continue;
+        }
+        const when = new Date(v?.updatedAt || v?.createdAt || v?.date || 0).getTime();
+        if (when>0){
+          let route: string | undefined = undefined;
+          if (k.startsWith('apollo_')) route='/apollo';
+          else if (k.startsWith('gallery_')) route='/gallery';
+          else if (k.startsWith('wealth_')) route='/wealth';
+          else if (k.startsWith('health_')) route='/health';
+          else if (k.startsWith('timeline_')) route='/timeline';
+          else if (k.startsWith('labs_')) route='/labs';
+          items.push({ key:k, when, route });
+        }
       }
-    }
-    items.sort((a,b)=> b.when - a.when);
-    setRows(items.slice(0, 12));
+      items.sort((a,b)=> b.when - a.when);
+      setRows(items.slice(0, 12));
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   if (!rows.length) return <div className="text-sm gaia-muted">No recent activity.</div>;

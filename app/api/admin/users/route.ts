@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 
+import {
+  PERMISSION_STORAGE_KEY,
+  ensurePermissionShape,
+  type PermissionSet,
+} from "@/config/permissions";
 import { createSupabaseAdminClient } from "@/lib/supabase-admin";
 
 const MAX_BATCHES = 50;
@@ -12,6 +17,7 @@ type UserSummary = {
   createdAt: string | null;
   updatedAt: string | null;
   lastSignInAt: string | null;
+  permissions: PermissionSet;
 };
 
 type CreateUserPayload = {
@@ -34,6 +40,30 @@ export async function GET() {
   }
 
   try {
+    const permissionMap = new Map<string, PermissionSet>();
+
+    const { data: permissionRows, error: permissionError } = await adminClient
+      .from("user_storage")
+      .select("user_id,value")
+      .eq("key", PERMISSION_STORAGE_KEY);
+
+    if (permissionError) {
+      throw permissionError;
+    }
+
+    for (const row of permissionRows ?? []) {
+      if (!row?.user_id) continue;
+      let parsed = ensurePermissionShape(null);
+      if (typeof row.value === "string") {
+        try {
+          parsed = ensurePermissionShape(JSON.parse(row.value));
+        } catch {
+          parsed = ensurePermissionShape(null);
+        }
+      }
+      permissionMap.set(row.user_id, parsed);
+    }
+
     const allUsers: UserSummary[] = [];
     let page = 1;
     let batches = 0;
@@ -60,6 +90,7 @@ export async function GET() {
           createdAt: user.created_at,
           updatedAt: user.updated_at,
           lastSignInAt: user.last_sign_in_at,
+          permissions: permissionMap.get(user.id) ?? ensurePermissionShape(null),
         }))
       );
 
@@ -152,6 +183,7 @@ export async function POST(request: Request) {
       createdAt: user.created_at,
       updatedAt: user.updated_at,
       lastSignInAt: user.last_sign_in_at,
+      permissions: ensurePermissionShape(null),
     };
 
     return NextResponse.json({ user: responsePayload }, { status: 201 });

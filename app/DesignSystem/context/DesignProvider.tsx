@@ -8,7 +8,11 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import { supabase } from "@/lib/supabase";
+import {
+  getItem,
+  setItem,
+  waitForUserStorage,
+} from "@/lib/user-storage";
 import { DEFAULT_THEME, THEMES, type Theme } from "../theme";
 
 export type { Theme } from "../theme";
@@ -28,8 +32,6 @@ type DesignState = {
 export const Ctx = createContext<DesignState | null>(null);
 
 const THEME_KEY = "gaia.theme";
-const THEME_CACHE_KEY = "gaia_theme";
-const THEME_SETTING_KEY = "theme";
 const BTN_KEY = "gaia.ui.button";
 const SRCH_KEY = "gaia.ui.search";
 
@@ -43,44 +45,37 @@ function read<T extends string>(
   fallback: T,
   allowed?: readonly string[]
 ): T {
-  try {
-    const raw = localStorage.getItem(k);
-    if (!raw) return fallback;
-    if (
-      (raw.startsWith('"') && raw.endsWith('"')) ||
-      raw.startsWith("{") ||
-      raw.startsWith("[")
-    ) {
-      try {
-        const parsed = JSON.parse(raw);
-        if (typeof parsed === "string") {
-          if (!allowed || allowed.includes(parsed)) {
-            return (parsed as T) ?? fallback;
-          }
-          return fallback;
+  const raw = getItem(k);
+  if (!raw) return fallback;
+  if (
+    (raw.startsWith('"') && raw.endsWith('"')) ||
+    raw.startsWith("{") ||
+    raw.startsWith("[")
+  ) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (typeof parsed === "string") {
+        if (!allowed || allowed.includes(parsed)) {
+          return (parsed as T) ?? fallback;
         }
-      } catch {
-        // ignore JSON parse errors and fall back to raw value
+        return fallback;
       }
+    } catch {
+      // ignore JSON parse errors and fall back to raw value
     }
-    if (!allowed || allowed.includes(raw)) {
-      return raw as T;
-    }
-    return fallback;
-  } catch {
-    return fallback;
   }
+  if (!allowed || allowed.includes(raw)) {
+    return raw as T;
+  }
+  return fallback;
 }
 
 function write<T extends string>(k: string, v: T) {
-  try {
-    localStorage.setItem(k, v);
-  } catch {}
+  setItem(k, v);
 }
 
 function persistTheme(value: Theme) {
   write(THEME_KEY, value);
-  write(THEME_CACHE_KEY, value);
   if (typeof document !== "undefined") {
     const root = document.documentElement;
     root.setAttribute("data-theme", value);
@@ -100,30 +95,18 @@ function persistTheme(value: Theme) {
   }
 }
 
-type ThemeCacheSource = typeof THEME_CACHE_KEY | typeof THEME_KEY | null;
+type ThemeCacheSource = typeof THEME_KEY | null;
 
 function readCachedTheme(): { value: Theme | null; source: ThemeCacheSource } {
-  const cache = getThemeFromKey(THEME_CACHE_KEY);
+  const cache = getThemeFromKey(THEME_KEY);
   if (cache) {
-    return { value: cache, source: THEME_CACHE_KEY };
-  }
-  const legacy = getThemeFromKey(THEME_KEY);
-  if (legacy) {
-    return { value: legacy, source: THEME_KEY };
+    return { value: cache, source: THEME_KEY };
   }
   return { value: null, source: null };
 }
 
 function getThemeFromKey(key: string): Theme | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const storage = window.localStorage;
-    if (!storage) return null;
-    const raw = storage.getItem(key);
-    return coerceThemeCandidate(raw);
-  } catch {
-    return null;
-  }
+  return coerceThemeCandidate(getItem(key));
 }
 
 function readDocumentTheme(): Theme | null {
@@ -162,61 +145,6 @@ function coerceThemeCandidate(value: unknown): Theme | null {
   return null;
 }
 
-type ThemeSettingRow = {
-  value: unknown;
-} | null;
-
-async function fetchSupabaseThemePreference(): Promise<Theme | null> {
-  try {
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError) {
-      console.error("Failed to read Supabase session for theme:", sessionError);
-      return null;
-    }
-    const userId = sessionData?.session?.user?.id;
-    if (!userId) return null;
-    const { data, error } = await supabase
-      .from("settings")
-      .select("value")
-      .eq("user_id", userId)
-      .eq("key", THEME_SETTING_KEY)
-      .maybeSingle();
-    if (error) {
-      if (error.code !== "PGRST116") {
-        console.error("Failed to load theme from Supabase:", error);
-      }
-      return null;
-    }
-    return coerceThemeCandidate((data as ThemeSettingRow)?.value ?? null);
-  } catch (error) {
-    console.error("Unable to load theme from Supabase:", error);
-    return null;
-  }
-}
-
-async function saveSupabaseThemePreference(value: Theme) {
-  try {
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError) {
-      console.error("Failed to read Supabase session for theme save:", sessionError);
-      return;
-    }
-    const userId = sessionData?.session?.user?.id;
-    if (!userId) return;
-    const { error } = await supabase
-      .from("settings")
-      .upsert(
-        [{ user_id: userId, key: THEME_SETTING_KEY, value: { name: value } }],
-        { onConflict: "user_id,key", returning: "minimal" }
-      );
-    if (error) {
-      console.error("Failed to save theme to Supabase:", error);
-    }
-  } catch (error) {
-    console.error("Unable to save theme to Supabase:", error);
-  }
-}
-
 export function DesignProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(DEFAULT_THEME);
   const [button, setButton] = useState<ButtonStyle>("solid");
@@ -224,20 +152,16 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let isMounted = true;
-    const cached = readCachedTheme();
-    const fallback = readDocumentTheme();
-    const initialTheme = cached.value ?? fallback ?? DEFAULT_THEME;
-    setThemeState(initialTheme);
-    setButton(read(BTN_KEY, "solid", VALID_BUTTONS));
-    setSearch(read(SRCH_KEY, "rounded", VALID_SEARCHES));
-
-    if (cached.source !== THEME_CACHE_KEY) {
-      (async () => {
-        const remoteTheme = await fetchSupabaseThemePreference();
-        if (!isMounted || !remoteTheme) return;
-        setThemeState((current) => (current === remoteTheme ? current : remoteTheme));
-      })();
-    }
+    (async () => {
+      await waitForUserStorage();
+      if (!isMounted) return;
+      const cached = readCachedTheme();
+      const fallback = readDocumentTheme();
+      const initialTheme = cached.value ?? fallback ?? DEFAULT_THEME;
+      setThemeState(initialTheme);
+      setButton(read(BTN_KEY, "solid", VALID_BUTTONS));
+      setSearch(read(SRCH_KEY, "rounded", VALID_SEARCHES));
+    })();
 
     return () => {
       isMounted = false;
@@ -246,7 +170,6 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     persistTheme(theme);
-    void saveSupabaseThemePreference(theme);
   }, [theme]);
 
   useEffect(() => {

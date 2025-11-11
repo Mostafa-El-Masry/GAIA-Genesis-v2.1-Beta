@@ -1,19 +1,21 @@
 ﻿'use client';
 
-import { useRef, useState } from 'react';
-import Button from '@/app/DesignSystem/components/Button';
+"use client";
+
+import { useRef, useState } from "react";
+
+import Button from "@/app/DesignSystem/components/Button";
+import {
+  removeItem,
+  setItem,
+  snapshotStorage,
+  waitForUserStorage,
+} from "@/lib/user-storage";
 
 type Snapshot = Record<string, string | null>;
 
-function snapshotLocalStorage(): Snapshot {
-  if (typeof window === 'undefined') return {};
-  const snapshot: Snapshot = {};
-  for (let i = 0; i < window.localStorage.length; i += 1) {
-    const key = window.localStorage.key(i);
-    if (!key) continue;
-    snapshot[key] = window.localStorage.getItem(key);
-  }
-  return snapshot;
+function snapshotUserStorage(): Snapshot {
+  return snapshotStorage();
 }
 
 function downloadSnapshot(data: Snapshot) {
@@ -33,8 +35,9 @@ function ExportPanel() {
   return (
     <div className="space-y-2">
       <Button
-        onClick={() => {
-          const snapshot = snapshotLocalStorage();
+        onClick={async () => {
+          await waitForUserStorage();
+          const snapshot = snapshotUserStorage();
           downloadSnapshot(snapshot);
           const total = Object.keys(snapshot).length;
           setStatus(`Backup created (${total} keys).`);
@@ -61,12 +64,16 @@ function ImportPanel() {
         throw new Error('Invalid backup payload.');
       }
       if (typeof window === 'undefined') return;
-      if (mode === 'replace') window.localStorage.clear();
+      await waitForUserStorage();
+      if (mode === 'replace') {
+        const current = snapshotUserStorage();
+        Object.keys(current).forEach((key) => removeItem(key));
+      }
       let count = 0;
       Object.entries(parsed as Record<string, unknown>).forEach(([key, value]) => {
         try {
           const stringValue = typeof value === 'string' ? value : JSON.stringify(value);
-          window.localStorage.setItem(key, stringValue);
+          setItem(key, stringValue);
           count += 1;
         } catch {
           // Ignore entries that cannot be serialised

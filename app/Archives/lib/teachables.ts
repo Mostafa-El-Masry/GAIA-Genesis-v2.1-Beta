@@ -1,18 +1,16 @@
 'use client';
 
+import { readJSON, writeJSON } from "@/lib/user-storage";
 import type { Lesson, Subject } from "../data/subjects";
 
 const KEY = "gaia.academy.teachables"; // Record<lessonId, true>
 
 function readObj(): Record<string, boolean> {
-  try {
-    const raw = localStorage.getItem(KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch { return {}; }
+  return readJSON<Record<string, boolean>>(KEY, {});
 }
 
 function writeObj(obj: Record<string, boolean>) {
-  localStorage.setItem(KEY, JSON.stringify(obj));
+  writeJSON(KEY, obj);
 }
 
 export function isTeachable(lessonId: string): boolean {
@@ -42,14 +40,11 @@ export type CustomConcept = {
 };
 
 function readCustom(): CustomConcept[] {
-  try {
-    const raw = localStorage.getItem(CUSTOM_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
+  return readJSON<CustomConcept[]>(CUSTOM_KEY, []);
 }
 
 function writeCustom(list: CustomConcept[]) {
-  localStorage.setItem(CUSTOM_KEY, JSON.stringify(list));
+  writeJSON(CUSTOM_KEY, list);
 }
 
 export function addLessonToAcademy(subject: Subject, lesson: Lesson): CustomConcept {

@@ -93,37 +93,40 @@ export default function AppBar() {
 
         <div
           className="relative"
-          onMouseEnter={() => handleToggle(true)}
-          onMouseLeave={() => handleToggle(false)}
+          onMouseEnter={() => isLoggedIn && handleToggle(true)}
+          onMouseLeave={() => isLoggedIn && handleToggle(false)}
         >
-          <button
-            type="button"
-            className="rounded-lg border gaia-border px-3 py-1.5 text-sm font-semibold gaia-hover-soft transition"
-            aria-haspopup="true"
-            aria-expanded={open}
-            onFocus={() => handleToggle(true)}
-            onBlur={() => handleToggle(false)}
-          >
-            {title}
-          </button>
-          {open && isLoggedIn && (
-            <div className="gaia-glass gaia-border absolute right-0 top-[calc(100%+0.5rem)] min-w-[220px] rounded-lg border p-3 shadow-lg">
-              <div className="mb-3 text-xs uppercase tracking-wide gaia-muted">
-                Signed in as
-              </div>
-              <div className="text-sm font-semibold">{title}</div>
-              {email && (
-                <div className="break-all text-xs gaia-muted">{email}</div>
+          {isLoggedIn ? (
+            <>
+              <button
+                type="button"
+                className="rounded-lg border gaia-border px-3 py-1.5 text-sm font-semibold gaia-hover-soft transition"
+                aria-haspopup="true"
+                aria-expanded={open}
+                onFocus={() => handleToggle(true)}
+                onBlur={() => handleToggle(false)}
+              >
+                {title}
+              </button>
+              {open && (
+                <div className="gaia-glass gaia-border absolute right-0 top-[calc(100%+0.5rem)] min-w-[220px] rounded-lg border p-3 shadow-lg">
+                  <div className="mb-3 text-xs uppercase tracking-wide gaia-muted">
+                    Signed in as
+                  </div>
+                  <div className="text-sm font-semibold">{title}</div>
+                  {email && (
+                    <div className="break-all text-xs gaia-muted">{email}</div>
+                  )}
+                  <div className="mt-4">
+                    <LogoutButton className="w-full rounded-lg border gaia-border px-3 py-1.5 text-sm font-medium gaia-hover-soft" />
+                  </div>
+                </div>
               )}
-              <div className="mt-4">
-                <LogoutButton className="w-full rounded-lg border gaia-border px-3 py-1.5 text-sm font-medium gaia-hover-soft" />
-              </div>
-            </div>
-          )}
-          {!isLoggedIn && (
+            </>
+          ) : (
             <Link
               href="/auth/login"
-              className="absolute right-0 top-[calc(100%+0.5rem)] rounded-lg border gaia-border px-3 py-1.5 text-sm font-medium gaia-hover-soft"
+              className="rounded-lg border gaia-border px-3 py-1.5 text-sm font-medium gaia-hover-soft"
             >
               Sign in
             </Link>

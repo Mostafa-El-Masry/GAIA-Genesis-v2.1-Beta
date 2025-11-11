@@ -1,5 +1,6 @@
 "use client";
 
+import { readJSON, writeJSON } from "@/lib/user-storage";
 import type { Transaction, Budget, Goal, NetItem, NetSnapshot } from "./types";
 
 const K = {
@@ -17,14 +18,10 @@ export type Prefs = {
 };
 
 function g<T>(k: string, fb: T): T {
-  try {
-    const raw = localStorage.getItem(k);
-    if (raw) return JSON.parse(raw) as T;
-  } catch {}
-  return fb;
+  return readJSON<T>(k, fb);
 }
 function s<T>(k: string, v: T) {
-  localStorage.setItem(k, JSON.stringify(v));
+  writeJSON(k, v);
 }
 
 export const loadTx = (): Transaction[] => g<Transaction[]>(K.tx, []);

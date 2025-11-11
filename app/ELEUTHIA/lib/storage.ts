@@ -1,5 +1,6 @@
-'use client';
+"use client";
 
+import { readJSON, removeItem, writeJSON } from "@/lib/user-storage";
 import type { EleuVault } from "../types";
 
 const META_KEY = "eleu.meta";
@@ -12,25 +13,19 @@ export type EleuMeta = {
 };
 
 export function readMeta(): EleuMeta | null {
-  try {
-    const raw = localStorage.getItem(META_KEY);
-    return raw ? (JSON.parse(raw) as EleuMeta) : null;
-  } catch { return null; }
+  return readJSON<EleuMeta | null>(META_KEY, null);
 }
 
 export function writeMeta(m: EleuMeta) {
-  localStorage.setItem(META_KEY, JSON.stringify(m));
+  writeJSON(META_KEY, m);
 }
 
 export function readVaultCipher(): { iv: string; ct: string } | null {
-  try {
-    const raw = localStorage.getItem(VAULT_KEY);
-    return raw ? (JSON.parse(raw) as any) : null;
-  } catch { return null; }
+  return readJSON<{ iv: string; ct: string } | null>(VAULT_KEY, null);
 }
 
 export function writeVaultCipher(payload: { iv: string; ct: string }) {
-  localStorage.setItem(VAULT_KEY, JSON.stringify(payload));
+  writeJSON(VAULT_KEY, payload);
 }
 
 export function hasVault(): boolean {
@@ -38,6 +33,6 @@ export function hasVault(): boolean {
 }
 
 export function clearAll() {
-  localStorage.removeItem(META_KEY);
-  localStorage.removeItem(VAULT_KEY);
+  removeItem(META_KEY);
+  removeItem(VAULT_KEY);
 }

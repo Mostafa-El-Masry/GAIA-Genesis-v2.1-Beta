@@ -1,5 +1,6 @@
 "use client";
 
+import { readJSON } from "@/lib/user-storage";
 import { concepts } from "../../apollo/(tabs)/academy/data/academy";
 import type { MicroConcept } from "../../apollo/(tabs)/academy/data/academy";
 
@@ -26,21 +27,11 @@ function readResults(): Array<{
   completedAt: number;
   notes?: string;
 }> {
-  try {
-    const raw = localStorage.getItem(RESULT_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
+  return readJSON(RESULT_KEY, []);
 }
 
 function readBuildNotesObj(): Record<string, string> {
-  try {
-    const raw = localStorage.getItem(BUILD_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
+  return readJSON(BUILD_KEY, {});
 }
 
 function parseFirstUrl(text: string): string | undefined {

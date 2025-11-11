@@ -1,4 +1,6 @@
-'use client';
+"use client";
+
+import { readJSON, writeJSON } from "@/lib/user-storage";
 
 export type EncryptedPayload = { iv: string; ct: string };
 
@@ -12,14 +14,11 @@ export type Snapshot = {
 };
 
 function read(): Snapshot[] {
-  try {
-    const raw = localStorage.getItem(SNAP_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
+  return readJSON<Snapshot[]>(SNAP_KEY, []);
 }
 
 function write(list: Snapshot[]) {
-  localStorage.setItem(SNAP_KEY, JSON.stringify(list));
+  writeJSON(SNAP_KEY, list);
 }
 
 export function listSnapshots(): Snapshot[] {

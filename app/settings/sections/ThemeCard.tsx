@@ -7,6 +7,7 @@ import {
   type Theme,
 } from "@/app/DesignSystem/context/DesignProvider";
 import { THEMES } from "@/app/DesignSystem/theme";
+import { readJSON, waitForUserStorage, writeJSON } from "@/lib/user-storage";
 
 const THEME_OPTIONS = THEMES.map((value) => ({
   value,
@@ -22,26 +23,35 @@ export default function ThemeCard() {
   const [glass, setGlass] = useState(6); // blur intensity 0-12
 
   useEffect(() => {
-    try {
-      const m = localStorage.getItem("settings_theme_mode");
-      if (m) setMode(JSON.parse(m));
-      const a = localStorage.getItem("settings_accent");
-      if (a) setAccent(JSON.parse(a));
-      const s = localStorage.getItem("settings_fontScale");
-      if (s) setScale(JSON.parse(s));
-      const d = localStorage.getItem("settings_density");
-      if (d) setDensity(JSON.parse(d));
-      const g = localStorage.getItem("settings_glass");
-      if (g) setGlass(JSON.parse(g));
-    } catch {}
+    let cancelled = false;
+    (async () => {
+      await waitForUserStorage();
+      if (cancelled) return;
+      const m = readJSON<"light" | "dark" | "auto">(
+        "settings_theme_mode",
+        mode
+      );
+      setMode(m);
+      const a = readJSON<string>("settings_accent", accent);
+      setAccent(a);
+      const s = readJSON<number>("settings_fontScale", scale);
+      setScale(s);
+      const d = readJSON<"cozy" | "compact">("settings_density", density);
+      setDensity(d);
+      const g = readJSON<number>("settings_glass", glass);
+      setGlass(g);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("settings_theme_mode", JSON.stringify(mode));
-    localStorage.setItem("settings_accent", JSON.stringify(accent));
-    localStorage.setItem("settings_fontScale", JSON.stringify(scale));
-    localStorage.setItem("settings_density", JSON.stringify(density));
-    localStorage.setItem("settings_glass", JSON.stringify(glass));
+    writeJSON("settings_theme_mode", mode);
+    writeJSON("settings_accent", accent);
+    writeJSON("settings_fontScale", scale);
+    writeJSON("settings_density", density);
+    writeJSON("settings_glass", glass);
 
     // apply minimal CSS vars on <html>
     const html = document.documentElement;

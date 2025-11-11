@@ -2,25 +2,31 @@
 
 import { useEffect, useState } from 'react';
 
+import { readJSON, waitForUserStorage } from '@/lib/user-storage';
+
 /**
  * Wealth sparkline: looks for wealth_history = [number,…] or similar.
  */
-function readJSON(key:string){ try{ const r=localStorage.getItem(key); return r?JSON.parse(r):null; }catch{ return null; } }
 
 export default function WealthSpark(){
   const [points, setPoints] = useState<number[]>([]);
 
   useEffect(()=>{
-    let arr:number[] = [];
-    const cand = readJSON('wealth_history') || readJSON('wealth_balances');
-    if (Array.isArray(cand)){
-      arr = cand.map((x:any)=> Number(x?.total ?? x)).filter((n:any)=>!isNaN(n));
-    }
-    if (arr.length===0){
-      // small dummy trend if none
-      arr = [0, 2, 4, 7, 11, 16, 22, 29].map(n=> n*1000);
-    }
-    setPoints(arr.slice(-30));
+    let cancelled = false;
+    (async () => {
+      await waitForUserStorage();
+      if (cancelled) return;
+      let arr:number[] = [];
+      const cand = readJSON<any[]>('wealth_history', null) ?? readJSON<any[]>('wealth_balances', null);
+      if (Array.isArray(cand)){
+        arr = cand.map((x:any)=> Number(x?.total ?? x)).filter((n:any)=>!isNaN(n));
+      }
+      if (arr.length===0){
+        arr = [0, 2, 4, 7, 11, 16, 22, 29].map(n=> n*1000);
+      }
+      setPoints(arr.slice(-30));
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   if (!points.length) return <div className="text-sm gaia-muted">No data</div>;

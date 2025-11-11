@@ -4,6 +4,7 @@ import { useEffect } from "react";
 
 import { ensureAuthFromSupabaseSession } from "@/lib/auth-client";
 import { supabase } from "@/lib/supabase";
+import { hydrateUserStorage } from "@/lib/user-storage";
 
 /**
  * Keeps the local auth cache (gaia.auth.*) in sync with Supabase.
@@ -22,7 +23,9 @@ export default function AuthHydrator() {
           console.error("Failed to read Supabase session:", error);
           return;
         }
-        ensureAuthFromSupabaseSession(data?.session ?? null);
+        const session = data?.session ?? null;
+        ensureAuthFromSupabaseSession(session);
+        await hydrateUserStorage(session);
       } catch (error) {
         console.error("Unable to hydrate auth session:", error);
       }
@@ -33,6 +36,7 @@ export default function AuthHydrator() {
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         ensureAuthFromSupabaseSession(session);
+        void hydrateUserStorage(session);
       }
     );
 

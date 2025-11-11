@@ -5,7 +5,11 @@ import { useMemo, useState } from "react";
 import NoScroll from "@/components/NoScroll";
 import UserDropdown from "@/components/UserDropdown";
 import { useAuthSnapshot } from "@/lib/auth-client";
-import { getPermissionSet, type PermissionKey } from "@/lib/permissions";
+import {
+  isCreatorAdmin,
+  useCurrentPermissions,
+  type PermissionKey,
+} from "@/lib/permissions";
 
 interface NavLink {
   href: string;
@@ -22,7 +26,8 @@ export default function HomePage() {
   const [radius, setRadius] = useState<number>(280);
   const { profile, status } = useAuthSnapshot();
   const email = profile?.email ?? status?.email ?? null;
-  const permissions = useMemo(() => getPermissionSet(email), [email]);
+  const permissions = useCurrentPermissions();
+  const isAdmin = useMemo(() => isCreatorAdmin(email), [email]);
 
   // All links in one array for circular layout
   const links: NavLink[] = [
@@ -36,9 +41,9 @@ export default function HomePage() {
     // Archives moved under Apollo; remove from main intro links
     { href: "/settings", label: "Settings", permission: "settings" },
   ];
-  const visibleLinks = links.filter((link) =>
-    Boolean(permissions[link.permission])
-  );
+  const visibleLinks = isAdmin
+    ? links
+    : links.filter((link) => Boolean(permissions[link.permission]));
 
   return (
     <main className="fixed inset-0 flex items-center justify-center no-nav">

@@ -1,8 +1,11 @@
 ﻿"use client";
 
+"use client";
+
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { ApolloData } from "../lib/types";
+import { readJSON, writeJSON } from "@/lib/user-storage";
 
 const inputStyles =
   "gaia-input w-full rounded-2xl px-4 py-2 text-sm font-semibold shadow-sm placeholder:gaia-muted focus:outline-none focus:ring-2 focus:ring-black/10";
@@ -66,8 +69,7 @@ export default function ArchiveSidebar({
     const title = newTopic.trim();
     if (!title) return;
 
-    const json = localStorage.getItem(STORAGE_KEY) || '{"topics":[]}';
-    const payload = JSON.parse(json) as ApolloData;
+    const payload = readJSON<ApolloData>(STORAGE_KEY, { topics: [] });
     const existing = payload.topics.find(
       (t) => t.title.toLowerCase() === title.toLowerCase()
     );
@@ -80,7 +82,7 @@ export default function ArchiveSidebar({
 
     const id = Math.random().toString(36).slice(2, 10);
     payload.topics.push({ id, title, sections: [] });
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    writeJSON(STORAGE_KEY, payload);
     setTopicId(id);
     setNewTopic("");
   }

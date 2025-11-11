@@ -1,3 +1,7 @@
+"use client";
+
+import { readJSON, writeJSON } from "@/lib/user-storage";
+
 interface ExchangeRateResponse {
   success: boolean;
   timestamp: number;
@@ -62,18 +66,12 @@ const STORAGE_KEY = "exchangeRateEGP_KWD";
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
 function getStoredRate(): StoredRate | null {
-  try {
-    const stored = localStorage?.getItem(STORAGE_KEY);
-    if (!stored) return null;
-    return JSON.parse(stored) as StoredRate;
-  } catch {
-    return null;
-  }
+  return readJSON<StoredRate | null>(STORAGE_KEY, null);
 }
 
 function storeRate(rate: number, timestamp: number) {
   try {
-    localStorage?.setItem(STORAGE_KEY, JSON.stringify({ rate, timestamp }));
+    writeJSON(STORAGE_KEY, { rate, timestamp });
   } catch (error) {
     console.warn("Failed to store exchange rate:", error);
   }

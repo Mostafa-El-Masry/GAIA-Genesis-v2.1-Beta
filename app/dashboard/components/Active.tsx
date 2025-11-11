@@ -4,17 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { listBuilds } from "@/app/labs/lib/labs";
 import { hasVault } from "@/app/ELEUTHIA/lib/storage";
+import { readJSON, waitForUserStorage } from "@/lib/user-storage";
 
 type Result = { conceptId: string; score: number; total: number; completedAt: number; notes?: string };
-
-function readJSON<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
-}
 
 export default function Active() {
   const [progress, setProgress] = useState<Record<string, boolean>>({});
@@ -23,7 +15,10 @@ export default function Active() {
   const [buildCount, setBuildCount] = useState<number>(0);
 
   useEffect(() => {
-    function load() {
+    let cancelled = false;
+    async function load() {
+      await waitForUserStorage();
+      if (cancelled) return;
       setProgress(readJSON("gaia.tower.progress", {}));
       setResults(readJSON<Result[]>("gaia.apollo.academy.results", []));
       setVault(hasVault());
@@ -33,13 +28,14 @@ export default function Active() {
         setBuildCount(0);
       }
     }
-    load();
+    void load();
     function onAny() {
-      load();
+      void load();
     }
     window.addEventListener("storage", onAny);
     window.addEventListener("gaia:tower:progress", onAny as any);
     return () => {
+      cancelled = true;
       window.removeEventListener("storage", onAny);
       window.removeEventListener("gaia:tower:progress", onAny as any);
     };

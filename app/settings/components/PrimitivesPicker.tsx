@@ -1,18 +1,20 @@
 'use client';
 
+import { useEffect } from "react";
+
 import Button from "@/app/DesignSystem/components/Button";
 import SearchInput from "@/app/DesignSystem/components/SearchInput";
+import { setItem } from "@/lib/user-storage";
 
 /**
  * Baseline primitives (single default for each)
  * - We still persist keys so future variants can reuse the same storage.
  */
 export default function PrimitivesPicker() {
-  // Persisting defaults for forward-compat
-  if (typeof window !== "undefined") {
-    window.localStorage.setItem("gaia.buttonStyle", "default");
-    window.localStorage.setItem("gaia.searchStyle", "default");
-  }
+  useEffect(() => {
+    setItem("gaia.buttonStyle", "default");
+    setItem("gaia.searchStyle", "default");
+  }, []);
 
   return (
     <div className="space-y-4">

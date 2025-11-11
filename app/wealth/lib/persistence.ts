@@ -1,3 +1,7 @@
+"use client";
+
+import { readJSON, writeJSON } from "@/lib/user-storage";
+
 export interface ExpenseItem {
   id: string;
   name: string;
@@ -43,9 +47,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
 
 export function loadSettings(): AppSettings {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_SETTINGS;
-    return JSON.parse(raw);
+    return readJSON<AppSettings>(STORAGE_KEY, DEFAULT_SETTINGS);
   } catch (e) {
     console.error("Failed to load settings, using defaults", e);
     return DEFAULT_SETTINGS;
@@ -54,7 +56,7 @@ export function loadSettings(): AppSettings {
 
 export function saveSettings(s: AppSettings) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+    writeJSON(STORAGE_KEY, s);
   } catch (e) {
     console.error("Failed to save settings", e);
   }

@@ -1,11 +1,12 @@
 'use client';
+import { readJSON, writeJSON } from '@/lib/user-storage';
 import type { ApolloData, ApolloPrefs, Topic, Section } from './types';
 import { nid } from './id';
 const DATA_KEY='gaia_apollo_v1_notes';const PREF_KEY='gaia_apollo_v1_prefs';
-export function loadData():ApolloData{try{const raw=localStorage.getItem(DATA_KEY);if(raw) return JSON.parse(raw);}catch{} return {topics:[]};}
-export function saveData(d:ApolloData){localStorage.setItem(DATA_KEY, JSON.stringify(d));}
-export function loadPrefs():ApolloPrefs{try{const raw=localStorage.getItem(PREF_KEY);if(raw) return JSON.parse(raw);}catch{} return {} }
-export function savePrefs(p:ApolloPrefs){localStorage.setItem(PREF_KEY, JSON.stringify(p));}
+export function loadData():ApolloData{return readJSON<ApolloData>(DATA_KEY,{topics:[]});}
+export function saveData(d:ApolloData){writeJSON(DATA_KEY,d);}
+export function loadPrefs():ApolloPrefs{return readJSON<ApolloPrefs>(PREF_KEY,{});}
+export function savePrefs(p:ApolloPrefs){writeJSON(PREF_KEY,p);}
 export function findTopic(d:ApolloData,title:string){return d.topics.find(t=>t.title.toLowerCase()===title.toLowerCase());}
 export function getTopicById(d:ApolloData,id?:string){return d.topics.find(t=>t.id===id)}
 export function getSectionById(t:Topic|undefined,id?:string){return t?.sections.find(s=>s.id===id)}

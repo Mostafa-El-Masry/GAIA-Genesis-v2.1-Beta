@@ -1,5 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
+import {
+  getItem,
+  readJSON,
+  setItem,
+  waitForUserStorage,
+  writeJSON,
+} from "@/lib/user-storage";
 import type { AutoTagMeta } from "./tagging";
 export type { AutoTagMeta } from "./tagging";
 
@@ -22,39 +29,35 @@ export function usePrefs() {
   const [sort, setSort] = useState<SortKey>("trend");
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(PREF);
-      if (raw) {
-        const p = JSON.parse(raw);
-        if (p.mode) setMode(p.mode);
-        if (p.sort) setSort(p.sort);
-      }
-    } catch {}
+    let cancelled = false;
+    (async () => {
+      await waitForUserStorage();
+      if (cancelled) return;
+      const stored = readJSON<{ mode?: Mode; sort?: SortKey }>(PREF, {});
+      if (stored.mode) setMode(stored.mode);
+      if (stored.sort) setSort(stored.sort);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(PREF, JSON.stringify({ mode, sort }));
+    writeJSON(PREF, { mode, sort });
   }, [mode, sort]);
 
   return { mode, setMode, sort, setSort };
 }
 
 function readWatchMap(): Record<string, number> {
-  if (typeof window === "undefined") return {};
-  const targets = [WATCH_TIME, LEGACY_VIEWS];
-  for (const key of targets) {
-    try {
-      const raw = localStorage.getItem(key);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (key === LEGACY_VIEWS) {
-          localStorage.setItem(WATCH_TIME, raw);
-        }
-        return typeof parsed === "object" && parsed ? parsed : {};
-      }
-    } catch {
-      // ignore parse errors and continue to next key
-    }
+  const primary = readJSON<Record<string, number>>(WATCH_TIME, {});
+  if (Object.keys(primary).length > 0) {
+    return primary;
+  }
+  const legacy = readJSON<Record<string, number>>(LEGACY_VIEWS, {});
+  if (Object.keys(legacy).length > 0) {
+    writeJSON(WATCH_TIME, legacy);
+    return legacy;
   }
   return {};
 }
@@ -68,37 +71,29 @@ export function addWatchTime(id: string, seconds: number) {
   if (!Number.isFinite(seconds) || seconds <= 0) return;
   const map = { ...readWatchMap() };
   map[id] = (map[id] || 0) + seconds;
-  localStorage.setItem(WATCH_TIME, JSON.stringify(map));
+  writeJSON(WATCH_TIME, map);
   window.dispatchEvent(new CustomEvent("gallery:view-updated"));
 }
 
 export function resetViews() {
   if (typeof window === "undefined") return;
-  localStorage.setItem(WATCH_TIME, "{}");
-  localStorage.setItem(LEGACY_VIEWS, "{}");
+  writeJSON(WATCH_TIME, {});
+  writeJSON(LEGACY_VIEWS, {});
   window.dispatchEvent(new CustomEvent("gallery:view-updated"));
 }
 export function getAddedMap(): Record<string, string> {
-  try {
-    return JSON.parse(localStorage.getItem(ADDED) || "{}");
-  } catch {
-    return {};
-  }
+  return readJSON<Record<string, string>>(ADDED, {});
 }
 export function setAddedDate(id: string, iso: string) {
   const map = getAddedMap();
   if (!map[id]) {
     map[id] = iso;
-    localStorage.setItem(ADDED, JSON.stringify(map));
+    writeJSON(ADDED, map);
   }
 }
 
 export function getFavorites(): Record<string, boolean> {
-  try {
-    return JSON.parse(localStorage.getItem(FAVORITES) || "{}");
-  } catch {
-    return {};
-  }
+  return readJSON<Record<string, boolean>>(FAVORITES, {});
 }
 
 export function setFavorite(id: string, value: boolean) {
@@ -108,7 +103,7 @@ export function setFavorite(id: string, value: boolean) {
   } else {
     delete map[id];
   }
-  localStorage.setItem(FAVORITES, JSON.stringify(map));
+  writeJSON(FAVORITES, map);
   if (typeof window !== "undefined") {
     window.dispatchEvent(
       new CustomEvent("gallery:favorites-updated", {
@@ -119,11 +114,7 @@ export function setFavorite(id: string, value: boolean) {
 }
 
 export function getTagsMap(): Record<string, string[]> {
-  try {
-    return JSON.parse(localStorage.getItem(TAGS) || "{}");
-  } catch {
-    return {};
-  }
+  return readJSON<Record<string, string[]>>(TAGS, {});
 }
 
 export function setItemTags(id: string, tags: string[]) {
@@ -140,7 +131,7 @@ export function setItemTags(id: string, tags: string[]) {
   } else {
     delete map[id];
   }
-  localStorage.setItem(TAGS, JSON.stringify(map));
+  writeJSON(TAGS, map);
   if (typeof window !== "undefined") {
     window.dispatchEvent(
       new CustomEvent("gallery:tags-updated", { detail: { id, tags: clean } })
@@ -156,25 +147,17 @@ export function mergeItemTags(id: string, tags: string[]) {
 }
 
 export function getAutoTagMeta(): Record<string, AutoTagMeta> {
-  try {
-    return JSON.parse(localStorage.getItem(AUTO_TAG_META) || "{}");
-  } catch {
-    return {};
-  }
+  return readJSON<Record<string, AutoTagMeta>>(AUTO_TAG_META, {});
 }
 
 export function setAutoTagMeta(id: string, meta: AutoTagMeta) {
   const map = getAutoTagMeta();
   map[id] = meta;
-  localStorage.setItem(AUTO_TAG_META, JSON.stringify(map));
+  writeJSON(AUTO_TAG_META, map);
 }
 
 export function getTitlesMap(): Record<string, string> {
-  try {
-    return JSON.parse(localStorage.getItem(TITLES) || "{}");
-  } catch {
-    return {};
-  }
+  return readJSON<Record<string, string>>(TITLES, {});
 }
 
 export function setItemTitle(id: string, title: string | null) {
@@ -184,7 +167,7 @@ export function setItemTitle(id: string, title: string | null) {
   } else {
     delete map[id];
   }
-  localStorage.setItem(TITLES, JSON.stringify(map));
+  writeJSON(TITLES, map);
   if (typeof window !== "undefined") {
     window.dispatchEvent(
       new CustomEvent("gallery:titles-updated", { detail: { id, title } })
@@ -193,18 +176,14 @@ export function setItemTitle(id: string, title: string | null) {
 }
 
 export function getVideoProgressMap(): Record<string, number> {
-  try {
-    return JSON.parse(localStorage.getItem(VIDEO_PROGRESS) || "{}");
-  } catch {
-    return {};
-  }
+  return readJSON<Record<string, number>>(VIDEO_PROGRESS, {});
 }
 
 export function setVideoProgress(id: string, seconds: number) {
   const map = getVideoProgressMap();
   const previous = map[id];
   map[id] = seconds;
-  localStorage.setItem(VIDEO_PROGRESS, JSON.stringify(map));
+  writeJSON(VIDEO_PROGRESS, map);
   if (
     typeof window !== "undefined" &&
     (previous === undefined || Math.abs(previous - seconds) >= 0.5)
@@ -223,7 +202,7 @@ export function getVideoProgress(id: string): number {
 }
 
 export function getVideoVolume(): number | undefined {
-  const raw = localStorage.getItem(VIDEO_VOLUME);
+  const raw = getItem(VIDEO_VOLUME);
   if (!raw) return undefined;
   const vol = Number(raw);
   return Number.isFinite(vol) ? Math.min(Math.max(vol, 0), 1) : undefined;
@@ -231,5 +210,5 @@ export function getVideoVolume(): number | undefined {
 
 export function setVideoVolume(volume: number) {
   const safe = Math.min(Math.max(volume, 0), 1);
-  localStorage.setItem(VIDEO_VOLUME, String(safe));
+  setItem(VIDEO_VOLUME, String(safe));
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { readJSON, writeJSON } from "@/lib/user-storage";
 import { shiftDate, todayKey } from "@/utils/dates";
 
 export type Category = "life" | "programming" | "distraction";
@@ -21,8 +22,8 @@ const STORAGE_KEY = "gaia.dailytrio.v1";
 const UPDATE_EVENT = "gaia:dailytrio:update";
 const categories: Category[] = ["life", "programming", "distraction"];
 
-function isBrowser() {
-  return typeof window !== "undefined" && typeof localStorage !== "undefined";
+function hasWindow() {
+  return typeof window !== "undefined";
 }
 
 function emitUpdate() {
@@ -31,26 +32,16 @@ function emitUpdate() {
 }
 
 export function getStore(): DailyStore {
-  if (!isBrowser()) return {};
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw);
-    if (typeof parsed === "object" && parsed) return parsed as DailyStore;
-    return {};
-  } catch {
-    return {};
-  }
+  return readJSON<DailyStore>(STORAGE_KEY, {});
 }
 
 export function saveStore(store: DailyStore): void {
-  if (!isBrowser()) return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+  writeJSON(STORAGE_KEY, store);
   emitUpdate();
 }
 
 export function ensureDate(date: string): void {
-  if (!isBrowser()) return;
+  if (!hasWindow()) return;
   const store = getStore();
   if (!store[date]) {
     store[date] = {};
@@ -59,7 +50,7 @@ export function ensureDate(date: string): void {
 }
 
 export function upsertTask(task: DailyTask): void {
-  if (!isBrowser()) return;
+  if (!hasWindow()) return;
   const store = getStore();
   const day = store[task.date] ?? {};
   day[task.category] = { ...task, done: Boolean(task.done) };
@@ -72,7 +63,7 @@ export function toggleDone(
   category: Category,
   done: boolean
 ): void {
-  if (!isBrowser()) return;
+  if (!hasWindow()) return;
   const store = getStore();
   const day = store[date];
   if (!day || !day[category]) return;
@@ -123,7 +114,7 @@ export function updateTaskDetails(
   category: Category,
   updates: EditableFields
 ): void {
-  if (!isBrowser()) return;
+  if (!hasWindow()) return;
   const store = getStore();
   const day = store[date];
   if (!day || !day[category]) return;
@@ -171,7 +162,7 @@ export function getCategories() {
 }
 
 export function hasStoreSupport() {
-  return isBrowser();
+  return hasWindow();
 }
 
 export const DailyStoreEvent = UPDATE_EVENT;
