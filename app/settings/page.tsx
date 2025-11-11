@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import {
   useDesign,
   type ButtonStyle,
@@ -55,6 +55,11 @@ type ManifestResponse = {
 type TabId = "appearance" | "gallery" | "permissions";
 
 type UsersFetchState = "idle" | "loading" | "success" | "error";
+
+type CreateUserStatus = {
+  type: "idle" | "loading" | "success" | "error";
+  message: string;
+};
 
 type SupabaseDirectoryUser = {
   id: string;
@@ -172,6 +177,13 @@ export default function SettingsPage() {
     setUserDirectoryReloadKey((key) => key + 1);
   }, []);
   const [activeTab, setActiveTab] = useState<TabId>("appearance");
+  const [newUserEmail, setNewUserEmail] = useState("");
+  const [newUserName, setNewUserName] = useState("");
+  const [newUserPassword, setNewUserPassword] = useState("");
+  const [createUserStatus, setCreateUserStatus] = useState<CreateUserStatus>({
+    type: "idle",
+    message: "",
+  });
 
   useEffect(() => {
     if (!isAdmin) {
@@ -251,6 +263,69 @@ export default function SettingsPage() {
       );
     };
   }, [refreshUserDirectory]);
+
+  const handleCreateUser = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      const email = newUserEmail.trim();
+      const password = newUserPassword.trim();
+      const name = newUserName.trim();
+
+      if (!email || !password) {
+        setCreateUserStatus({
+          type: "error",
+          message: "Email and password are required.",
+        });
+        return;
+      }
+
+      setCreateUserStatus({ type: "loading", message: "Creating user..." });
+
+      try {
+        const response = await fetch("/api/admin/users", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            password,
+            name: name || undefined,
+          }),
+        });
+
+        let payload: { error?: string } | null = null;
+        try {
+          payload = await response.json();
+        } catch {
+          payload = null;
+        }
+
+        if (!response.ok) {
+          throw new Error(payload?.error ?? "Unable to create user.");
+        }
+
+        setCreateUserStatus({
+          type: "success",
+          message: "User created. They can sign in with the credentials above.",
+        });
+        setNewUserEmail("");
+        setNewUserName("");
+        setNewUserPassword("");
+        refreshUserDirectory();
+      } catch (error) {
+        setCreateUserStatus({
+          type: "error",
+          message:
+            error instanceof Error ? error.message : "Unable to create user.",
+        });
+      }
+    },
+    [
+      newUserEmail,
+      newUserName,
+      newUserPassword,
+      refreshUserDirectory,
+    ]
+  );
 
   const availableTabs = useMemo(() => {
     const tabs: Array<{ id: TabId; label: string }> = [
@@ -620,18 +695,94 @@ export default function SettingsPage() {
         )}
 
         {activeTab === "permissions" && isAdmin && (
-          <section className="space-y-4 rounded-lg border gaia-border p-4">
-            <div className="flex flex-wrap items-center gap-3">
-              <h2 className="font-medium">User permissions</h2>
-              <button
-                type="button"
-                onClick={refreshUserDirectory}
-                className="text-xs font-semibold text-cyan-300 transition hover:text-cyan-100 disabled:opacity-50"
-                disabled={userDirectoryStatus === "loading"}
+          <>
+            <section className="space-y-4 rounded-lg border gaia-border p-4">
+              <div>
+                <h2 className="font-medium">Invite a new user</h2>
+                <p className="text-sm gaia-muted">
+                  Create an account directly in Supabase. Share the credentials
+                  privately or ask them to reset their password after the first
+                  sign in.
+                </p>
+              </div>
+              <form
+                className="grid gap-3 md:grid-cols-2"
+                onSubmit={handleCreateUser}
               >
-                Refresh from Supabase
-              </button>
-            </div>
+                <label className="flex flex-col gap-1 text-sm">
+                  <span>Email</span>
+                  <input
+                    type="email"
+                    required
+                    value={newUserEmail}
+                    onChange={(event) => setNewUserEmail(event.target.value)}
+                    className="gaia-input rounded border px-3 py-2"
+                    placeholder="user@example.com"
+                    autoComplete="email"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-sm">
+                  <span>Full name (optional)</span>
+                  <input
+                    type="text"
+                    value={newUserName}
+                    onChange={(event) => setNewUserName(event.target.value)}
+                    className="gaia-input rounded border px-3 py-2"
+                    placeholder="Nova Solis"
+                    autoComplete="name"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-sm md:col-span-2">
+                  <span>Temporary password</span>
+                  <input
+                    type="password"
+                    required
+                    value={newUserPassword}
+                    onChange={(event) => setNewUserPassword(event.target.value)}
+                    className="gaia-input rounded border px-3 py-2"
+                    placeholder="********"
+                    autoComplete="new-password"
+                  />
+                </label>
+                <div className="md:col-span-2 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                  <button
+                    type="submit"
+                    className="rounded-lg border border-cyan-400 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:border-cyan-300 disabled:opacity-70"
+                    disabled={createUserStatus.type === "loading"}
+                  >
+                    {createUserStatus.type === "loading"
+                      ? "Creating..."
+                      : "Create user"}
+                  </button>
+                  {createUserStatus.message && (
+                    <p
+                      className={`text-sm ${
+                        createUserStatus.type === "error"
+                          ? "text-rose-400"
+                          : createUserStatus.type === "success"
+                          ? "text-emerald-400"
+                          : "gaia-muted"
+                      }`}
+                    >
+                      {createUserStatus.message}
+                    </p>
+                  )}
+                </div>
+              </form>
+            </section>
+
+            <section className="space-y-4 rounded-lg border gaia-border p-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <h2 className="font-medium">User permissions</h2>
+                <button
+                  type="button"
+                  onClick={refreshUserDirectory}
+                  className="text-xs font-semibold text-cyan-300 transition hover:text-cyan-100 disabled:opacity-50"
+                  disabled={userDirectoryStatus === "loading"}
+                >
+                  Refresh from Supabase
+                </button>
+              </div>
             <p className="text-sm gaia-muted">
               Grant or revoke access to protected areas. Changes are saved
               instantly and apply on the next navigation.
@@ -719,7 +870,8 @@ export default function SettingsPage() {
                 })}
               </div>
             )}
-          </section>
+            </section>
+          </>
         )}
 
         {activeTab === "permissions" && !isAdmin && (

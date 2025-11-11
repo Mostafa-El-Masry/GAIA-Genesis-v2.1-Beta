@@ -1,5 +1,7 @@
 "use client";
 
+import type { Session } from "@supabase/supabase-js";
+
 /**
  * Lightweight local auth/profile store.
  *
@@ -210,6 +212,58 @@ export function getProfileByEmail(email: string | null | undefined): StoredProfi
 export function isLoggedIn(): boolean {
   const status = readStatus();
   return !!(status && status.email && status.session);
+}
+
+function deriveNameFromSession(session: Session): string | null {
+  const metadata = (session.user?.user_metadata ??
+    {}) as Record<string, unknown>;
+  const candidates = [
+    metadata.full_name,
+    metadata.name,
+    session.user?.email,
+  ];
+  for (const value of candidates) {
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+  return null;
+}
+
+export function ensureAuthFromSupabaseSession(
+  session: Session | null
+): boolean {
+  if (!session || !session.user) {
+    if (isLoggedIn()) {
+      recordUserLogout();
+      return true;
+    }
+    return false;
+  }
+
+  const email = session.user.email ?? null;
+  if (!email) return false;
+
+  const { original } = normaliseEmail(email);
+  if (!original) return false;
+
+  const current = getActiveStatus();
+  if (
+    current?.email === original &&
+    current?.session ===
+      (session.access_token ?? session.refresh_token ?? null)
+  ) {
+    return false;
+  }
+
+  const name = deriveNameFromSession(session);
+  recordUserLogin({
+    email: original,
+    name,
+    mode: "login",
+    sessionToken: session.access_token ?? session.refresh_token ?? email,
+  });
+  return true;
 }
 
 export type UseAuthSnapshot = {

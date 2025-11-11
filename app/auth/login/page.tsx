@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 
 import { sanitizeRedirect } from "@/lib/auth";
@@ -20,19 +21,16 @@ export default function LoginPage() {
     type: "idle",
     message: "",
   });
+  const searchParams = useSearchParams();
 
   // Avoid using next/navigation hooks at build/prerender time -- read params on client
   useEffect(() => {
-    try {
-      const sp = new URLSearchParams(window.location.search || "");
-      const raw = sp.get("mode");
-      setMode(raw === "signup" ? "signup" : "login");
-      const rawRedirect = sp.get("redirect") ?? null;
-      setRedirectTo(sanitizeRedirect(rawRedirect));
-    } catch {
-      // noop
-    }
-  }, []);
+    if (!searchParams) return;
+    const rawMode = searchParams.get("mode");
+    setMode(rawMode === "signup" ? "signup" : "login");
+    const rawRedirect = searchParams.get("redirect") ?? null;
+    setRedirectTo(sanitizeRedirect(rawRedirect));
+  }, [searchParams]);
 
   const handleSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {

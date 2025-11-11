@@ -5,6 +5,7 @@ import { cookies, headers } from "next/headers";
 
 import { DesignProvider } from "./DesignSystem/context/DesignProvider";
 import AppBar from "./components/AppBar";
+import AuthHydrator from "./components/AuthHydrator";
 import { DEFAULT_THEME, THEMES, type Theme } from "./DesignSystem/theme";
 
 export const metadata = { title: "GAIA", description: "GAIA v2.0 · Phase 5" };
@@ -70,11 +71,15 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `(() => {
   try {
-    var key = 'gaia.theme';
+    var primaryKey = 'gaia_theme';
+    var legacyKey = 'gaia.theme';
     var t = null;
-    try { t = localStorage.getItem(key); } catch (e) {}
+    try { t = localStorage.getItem(primaryKey); } catch (e) {}
     if (!t) {
-      var m = document.cookie.match('(?:^|; )' + key + '=([^;]+)');
+      try { t = localStorage.getItem(legacyKey); } catch (e) {}
+    }
+    if (!t) {
+      var m = document.cookie.match('(?:^|; )' + legacyKey + '=([^;]+)');
       if (m && m[1]) {
         try { t = decodeURIComponent(m[1]); } catch (e) { t = m[1]; }
       }
@@ -83,12 +88,14 @@ export default async function RootLayout({
     if (t && document && document.documentElement) {
       document.documentElement.setAttribute('data-theme', t);
       document.documentElement.setAttribute('data-gaia-theme', t);
+      try { localStorage.setItem(primaryKey, t); } catch (e) {}
     }
   } catch (e) {}
 })();`,
           }}
         />
         <DesignProvider>
+          <AuthHydrator />
           <AppBar />
           <div className="content min-h-screen">{children}</div>
         </DesignProvider>
