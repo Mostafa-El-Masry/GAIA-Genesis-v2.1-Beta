@@ -6,9 +6,14 @@ import { useTodoDaily } from "../dashboard/hooks/useTodoDaily";
 
 export default function TODOPage() {
   const { tasks } = useTodoDaily();
+
+  // Debug logging
+  console.log("TODOPage - tasks loaded:", tasks);
+
   const byCat = useMemo(() => {
     const map: Record<string, any[]> = { life: [], work: [], distraction: [] };
     for (const t of tasks) map[t.category].push(t);
+    console.log("TODOPage - tasks by category:", map);
     return map;
   }, [tasks]);
 
