@@ -5,15 +5,11 @@ import { useMemo } from "react";
 import { useTodoDaily } from "../dashboard/hooks/useTodoDaily";
 
 export default function TODOPage() {
-  const { tasks } = useTodoDaily();
-
-  // Debug logging
-  console.log("TODOPage - tasks loaded:", tasks);
+  const { tasks, deleteTask } = useTodoDaily();
 
   const byCat = useMemo(() => {
     const map: Record<string, any[]> = { life: [], work: [], distraction: [] };
     for (const t of tasks) map[t.category].push(t);
-    console.log("TODOPage - tasks by category:", map);
     return map;
   }, [tasks]);
 
@@ -32,7 +28,7 @@ export default function TODOPage() {
                 {byCat[cat].map((t) => (
                   <li key={t.id} className="p-3">
                     <div className="flex items-center justify-between">
-                      <div>
+                      <div className="flex-1">
                         <div className="font-medium">{t.title}</div>
                         {t.note && (
                           <div className="text-sm opacity-70">{t.note}</div>
@@ -52,6 +48,17 @@ export default function TODOPage() {
                             Due {t.due_date}
                           </span>
                         )}
+                        <button
+                          onClick={() => {
+                            if (confirm(`Delete task "${t.title}"?`)) {
+                              deleteTask(t.id);
+                            }
+                          }}
+                          className="btn btn-ghost btn-xs text-error hover:bg-error/20"
+                          title="Delete task"
+                        >
+                          ✕
+                        </button>
                       </div>
                     </div>
                   </li>
