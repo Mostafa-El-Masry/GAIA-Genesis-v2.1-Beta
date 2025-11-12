@@ -4,11 +4,8 @@ import type { ReactNode } from "react";
 import { useMemo } from "react";
 import { useAuthSnapshot } from "@/lib/auth-client";
 import { normaliseEmail } from "@/lib/strings";
-import {
-  useCurrentPermissions,
-  isCreatorAdmin,
-  type PermissionKey,
-} from "@/lib/permissions";
+import { useCurrentPermissions, isCreatorAdmin } from "@/lib/permissions";
+import type { PermissionKey } from "@/config/permissions";
 
 type PermissionGateProps = {
   permission: PermissionKey;

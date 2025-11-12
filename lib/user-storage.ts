@@ -15,6 +15,7 @@ type StorageListener = (detail: StorageEventDetail) => void;
 const STORAGE_TABLE = "user_storage";
 
 let activeUserId: string | null = null;
+let activeToken: string | null = null;
 let ready = false;
 let hydrating: Promise<void> | null = null;
 
@@ -34,7 +35,9 @@ function emit(detail: StorageEventDetail) {
 
   if (typeof window !== "undefined") {
     try {
-      window.dispatchEvent(new CustomEvent<StorageEventDetail>("gaia:storage", { detail }));
+      window.dispatchEvent(
+        new CustomEvent<StorageEventDetail>("gaia:storage", { detail })
+      );
     } catch {
       // Ignore dispatch failures (very old browsers/no window)
     }
@@ -88,17 +91,45 @@ export async function waitForUserStorage(): Promise<void> {
   });
 }
 
-async function fetchRows(userId: string): Promise<Map<string, string>> {
+async function fetchRows(
+  userId: string,
+  token?: string
+): Promise<Map<string, string>> {
+  // Prefer server-side proxy to fetch user storage. Falls back to direct
+  // Supabase client only if server proxy is not available.
+  if (typeof window === "undefined") return new Map();
+
+  const map = new Map<string, string>();
+
+  try {
+    if (typeof fetch !== "undefined") {
+      const headers: Record<string, string> = {};
+      if (token) headers["authorization"] = `Bearer ${token}`;
+
+      const res = await fetch("/api/user-storage", { headers });
+      if (!res.ok) {
+        throw new Error(`Failed to fetch user storage: ${res.status}`);
+      }
+      const json = await res.json();
+      const data = json?.storage ?? {};
+      for (const [key, value] of Object.entries(data)) {
+        if (typeof value === "string") map.set(key, value);
+      }
+      return map;
+    }
+  } catch (err) {
+    // If proxy fails, fall back to client Supabase call so the app remains functional.
+    console.warn(
+      "user-storage: server proxy fetch failed, falling back to client supabase:",
+      err
+    );
+  }
+
   const result = await supabase
     .from(STORAGE_TABLE)
     .select("key,value")
     .eq("user_id", userId);
-
-  if (result.error) {
-    throw result.error;
-  }
-
-  const map = new Map<string, string>();
+  if (result.error) throw result.error;
   for (const row of result.data ?? []) {
     if (!row || typeof row.key !== "string") continue;
     if (typeof row.value !== "string") continue;
@@ -115,10 +146,7 @@ function diffAndApply(next: Map<string, string>) {
     cache.set(key, value);
   }
 
-  const keys = new Set<string>([
-    ...previous.keys(),
-    ...next.keys(),
-  ]);
+  const keys = new Set<string>([...previous.keys(), ...next.keys()]);
 
   keys.forEach((key) => {
     const prev = previous.get(key) ?? null;
@@ -165,9 +193,10 @@ function subscribeToRealtime(userId: string) {
           (payload.old as { key?: string } | null)?.key;
         if (!key) return;
         const previous = cache.get(key) ?? null;
-        const nextValue = typeof (payload.new as { value?: string } | null)?.value === "string"
-          ? ((payload.new as { value?: string } | null)?.value as string)
-          : null;
+        const nextValue =
+          typeof (payload.new as { value?: string } | null)?.value === "string"
+            ? ((payload.new as { value?: string } | null)?.value as string)
+            : null;
         if (nextValue === null) {
           cache.delete(key);
         } else {
@@ -179,7 +208,9 @@ function subscribeToRealtime(userId: string) {
     .subscribe();
 }
 
-export async function hydrateUserStorage(session: Session | null): Promise<void> {
+export async function hydrateUserStorage(
+  session: Session | null
+): Promise<void> {
   const userId = session?.user?.id ?? null;
 
   if (!userId) {
@@ -188,6 +219,7 @@ export async function hydrateUserStorage(session: Session | null): Promise<void>
       emitClear();
     }
     cleanupRealtimeSubscription();
+    activeToken = null;
     ready = true;
     notifyReady();
     return;
@@ -199,7 +231,8 @@ export async function hydrateUserStorage(session: Session | null): Promise<void>
 
   hydrating ??= (async () => {
     try {
-      const rows = await fetchRows(userId);
+      activeToken = session?.access_token ?? null;
+      const rows = await fetchRows(userId, activeToken ?? undefined);
       activeUserId = userId;
       diffAndApply(rows);
       subscribeToRealtime(userId);
@@ -216,34 +249,56 @@ export async function hydrateUserStorage(session: Session | null): Promise<void>
 }
 
 async function persist(key: string, value: string | null) {
-  if (!activeUserId) {
-    return;
+  if (!activeUserId) return;
+
+  // Try to use server proxy for persistence. If activeToken is not available
+  // or the proxy fails, fall back to direct client Supabase call.
+  if (activeToken) {
+    try {
+      if (value === null) {
+        const url = new URL("/api/user-storage", window.location.origin);
+        url.searchParams.set("key", key);
+        const res = await fetch(url.toString(), {
+          method: "DELETE",
+          headers: { authorization: `Bearer ${activeToken}` },
+        });
+        if (!res.ok) throw new Error(`delete failed ${res.status}`);
+        return;
+      }
+
+      const res = await fetch("/api/user-storage", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${activeToken}`,
+        },
+        body: JSON.stringify({ key, value }),
+      });
+      if (!res.ok) throw new Error(`upsert failed ${res.status}`);
+      return;
+    } catch (err) {
+      console.warn(
+        "user-storage: server proxy persist failed, falling back to client supabase:",
+        err
+      );
+    }
   }
 
+  // fallback to client-side Supabase direct call
   if (value === null) {
     const { error } = await supabase
       .from(STORAGE_TABLE)
       .delete()
       .match({ user_id: activeUserId, key });
-    if (error) {
-      console.error("Failed to delete user storage value:", error);
-    }
+    if (error) console.error("Failed to delete user storage value:", error);
     return;
   }
-
-  const { error } = await supabase.from(STORAGE_TABLE).upsert(
-    [
-      {
-        user_id: activeUserId,
-        key,
-        value,
-      },
-    ],
-    { onConflict: "user_id,key", returning: "minimal" }
-  );
-  if (error) {
-    console.error("Failed to persist user storage value:", error);
-  }
+  const { error } = await supabase
+    .from(STORAGE_TABLE)
+    .upsert([{ user_id: activeUserId, key, value }], {
+      onConflict: "user_id,key",
+    });
+  if (error) console.error("Failed to persist user storage value:", error);
 }
 
 export function getItem(key: string): string | null {

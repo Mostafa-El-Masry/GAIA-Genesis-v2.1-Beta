@@ -29,7 +29,10 @@ export async function PUT(request: Request) {
   try {
     payload = (await request.json()) as UpdatePayload;
   } catch {
-    return NextResponse.json({ error: "Invalid JSON payload." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid JSON payload." },
+      { status: 400 }
+    );
   }
 
   const userId = payload.userId?.trim();
@@ -39,18 +42,16 @@ export async function PUT(request: Request) {
 
   const shaped = ensurePermissionShape(payload.permissions ?? null);
 
-  const { error } = await adminClient
-    .from("user_storage")
-    .upsert(
-      [
-        {
-          user_id: userId,
-          key: PERMISSION_STORAGE_KEY,
-          value: JSON.stringify(shaped),
-        },
-      ],
-      { onConflict: "user_id,key", returning: "minimal" }
-    );
+  const { error } = await adminClient.from("user_storage").upsert(
+    [
+      {
+        user_id: userId,
+        key: PERMISSION_STORAGE_KEY,
+        value: JSON.stringify(shaped),
+      },
+    ],
+    { onConflict: "user_id,key" }
+  );
 
   if (error) {
     console.error("Failed to update permissions:", error);

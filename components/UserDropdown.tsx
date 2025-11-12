@@ -45,6 +45,17 @@ export default function UserDropdown() {
     };
   }, [profile, status]);
 
+  if (!isLoggedIn) {
+    return (
+      <Link
+        href="/auth/login"
+        className="rounded-lg border gaia-border px-3 py-1.5 text-sm font-medium gaia-hover-soft"
+      >
+        Sign in
+      </Link>
+    );
+  }
+
   return (
     <div
       className="relative inline-flex"
@@ -72,14 +83,6 @@ export default function UserDropdown() {
             <LogoutButton className="w-full rounded-lg border gaia-border px-3 py-1.5 text-sm font-medium gaia-hover-soft" />
           </div>
         </div>
-      )}
-      {!isLoggedIn && (
-        <Link
-          href="/auth/login"
-          className="absolute right-0 top-[calc(100%+0.5rem)] rounded-lg border gaia-border px-3 py-1.5 text-sm font-medium gaia-hover-soft"
-        >
-          Sign in
-        </Link>
       )}
     </div>
   );

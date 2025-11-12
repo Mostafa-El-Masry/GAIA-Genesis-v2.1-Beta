@@ -82,15 +82,16 @@ export async function GET() {
       allUsers.push(
         ...batch.map((user) => ({
           id: user.id,
-          email: user.email,
+          email: user.email ?? null,
           name:
             (user.user_metadata?.full_name as string | undefined) ??
             (user.user_metadata?.name as string | undefined) ??
             null,
-          createdAt: user.created_at,
-          updatedAt: user.updated_at,
-          lastSignInAt: user.last_sign_in_at,
-          permissions: permissionMap.get(user.id) ?? ensurePermissionShape(null),
+          createdAt: user.created_at ?? null,
+          updatedAt: user.updated_at ?? null,
+          lastSignInAt: user.last_sign_in_at ?? null,
+          permissions:
+            permissionMap.get(user.id) ?? ensurePermissionShape(null),
         }))
       );
 
@@ -128,7 +129,10 @@ export async function POST(request: Request) {
   try {
     payload = (await request.json()) as CreateUserPayload;
   } catch {
-    return NextResponse.json({ error: "Invalid JSON payload." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid JSON payload." },
+      { status: 400 }
+    );
   }
 
   const email = payload.email?.trim().toLowerCase() ?? "";
@@ -143,7 +147,10 @@ export async function POST(request: Request) {
   }
 
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-    return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Enter a valid email address." },
+      { status: 400 }
+    );
   }
 
   if (password.length < 8) {
@@ -175,14 +182,14 @@ export async function POST(request: Request) {
 
     const responsePayload: UserSummary = {
       id: user.id,
-      email: user.email,
+      email: user.email ?? null,
       name:
         (user.user_metadata?.full_name as string | undefined) ??
         (user.user_metadata?.name as string | undefined) ??
         null,
-      createdAt: user.created_at,
-      updatedAt: user.updated_at,
-      lastSignInAt: user.last_sign_in_at,
+      createdAt: user.created_at ?? null,
+      updatedAt: user.updated_at ?? null,
+      lastSignInAt: user.last_sign_in_at ?? null,
       permissions: ensurePermissionShape(null),
     };
 

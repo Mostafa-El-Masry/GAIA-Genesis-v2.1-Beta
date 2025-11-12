@@ -717,64 +717,11 @@ export function PlansTabView({ metrics }: PlansTabViewProps) {
                 simRes.continuationYears.length === 0
               )
                 return null;
+              // toggleable continuation table
               return (
-                <div className="mt-6">
-                  <h5 className="text-sm font-semibold text-slate-900">
-                    Post‑target trajectory (reinvest-only to age 60 — annual Dec
-                    snapshots)
-                  </h5>
-                  <div className="mt-2 overflow-hidden rounded-2xl border border-cyan-100/80 ring-1 ring-cyan-500/15">
-                    <table className="min-w-full text-sm">
-                      <thead className="bg-gradient-to-r from-slate-900 to-cyan-700 text-[0.65rem] uppercase tracking-[0.3em] text-white">
-                        <tr>
-                          <th className="px-4 py-3 text-left font-semibold first:rounded-tl-2xl">
-                            Year
-                          </th>
-                          <th className="px-4 py-3 text-left font-semibold">
-                            Age
-                          </th>
-                          <th className="px-4 py-3 text-right font-semibold">
-                            Monthly Interest (Dec)
-                          </th>
-                          <th className="px-4 py-3 text-right font-semibold">
-                            Active Principal (Dec)
-                          </th>
-                          <th className="px-4 py-3 text-right font-semibold last:rounded-tr-2xl">
-                            Net Worth (Dec)
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="text-slate-700">
-                        {simRes.continuationYears.map((r, idx) => {
-                          const stripe =
-                            idx % 2 === 0 ? "bg-slate-900/5" : "bg-white";
-                          return (
-                            <tr
-                              key={`yr-${r.year}-cont`}
-                              className={`${stripe} border-b border-cyan-100/60 last:border-b-0 transition-colors hover:bg-cyan-100/60`}
-                            >
-                              <td className="px-4 py-3 font-medium text-slate-900">
-                                {r.year}
-                              </td>
-                              <td className="px-4 py-3 text-slate-600">
-                                {Math.floor(r.age)}
-                              </td>
-                              <td className="px-4 py-3 text-right font-mono text-xs text-emerald-600">
-                                {r.monthlyInterestDec.toLocaleString()}
-                              </td>
-                              <td className="px-4 py-3 text-right font-mono text-xs">
-                                {r.activePrincipalEnd.toLocaleString()}
-                              </td>
-                              <td className="px-4 py-3 text-right font-semibold text-slate-900">
-                                {r.netWorthEnd.toLocaleString()}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+                <ContinuationTable
+                  continuationYears={simRes.continuationYears}
+                />
               );
             })()}
           </div>
@@ -785,3 +732,76 @@ export function PlansTabView({ metrics }: PlansTabViewProps) {
 }
 
 export default PlansTabView;
+
+function ContinuationTable({
+  continuationYears,
+}: {
+  continuationYears: any[];
+}) {
+  const [open, setOpen] = useState(true);
+
+  return (
+    <div className="mt-6">
+      <div className="flex items-center justify-between">
+        <h5 className="text-sm font-semibold text-slate-900">
+          Post‑target trajectory (reinvest-only to age 60 — annual Dec
+          snapshots)
+        </h5>
+      </div>
+      <div className="mt-2 overflow-hidden rounded-2xl border border-cyan-100/80 ring-1 ring-cyan-500/15">
+        <table className="min-w-full text-sm">
+          <thead className="bg-gradient-to-r from-slate-900 to-cyan-700 text-[0.65rem] uppercase tracking-[0.3em] text-white">
+            <tr
+              onClick={() => setOpen((s) => !s)}
+              className="cursor-pointer select-none"
+              aria-hidden
+            >
+              <th className="px-4 py-3 text-left font-semibold first:rounded-tl-2xl">
+                Year
+              </th>
+              <th className="px-4 py-3 text-left font-semibold">Age</th>
+              <th className="px-4 py-3 text-right font-semibold">
+                Monthly Interest (Dec)
+              </th>
+              <th className="px-4 py-3 text-right font-semibold">
+                Active Principal (Dec)
+              </th>
+              <th className="px-4 py-3 text-right font-semibold last:rounded-tr-2xl">
+                Net Worth (Dec)
+              </th>
+            </tr>
+          </thead>
+          {open && (
+            <tbody className="text-slate-700">
+              {continuationYears.map((r, idx) => {
+                const stripe = idx % 2 === 0 ? "bg-slate-900/5" : "bg-white";
+                return (
+                  <tr
+                    key={`yr-${r.year}-cont`}
+                    className={`${stripe} border-b border-cyan-100/60 last:border-b-0 transition-colors hover:bg-cyan-100/60`}
+                  >
+                    <td className="px-4 py-3 font-medium text-slate-900">
+                      {r.year}
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">
+                      {Math.floor(r.age)}
+                    </td>
+                    <td className="px-4 py-3 text-right font-mono text-xs text-emerald-600">
+                      {r.monthlyInterestDec.toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 text-right font-mono text-xs">
+                      {r.activePrincipalEnd.toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 text-right font-semibold text-slate-900">
+                      {r.netWorthEnd.toLocaleString()}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          )}
+        </table>
+      </div>
+    </div>
+  );
+}

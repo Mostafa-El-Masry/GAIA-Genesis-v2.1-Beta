@@ -2,6 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  readJSON,
+  writeJSON,
+  waitForUserStorage,
+  subscribe,
+} from "@/lib/user-storage";
+import {
   awardXp,
   derivePercentFromXp,
   hasPaneContent,

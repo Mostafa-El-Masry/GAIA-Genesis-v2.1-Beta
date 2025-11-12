@@ -5,11 +5,8 @@ import { useMemo, useState } from "react";
 import NoScroll from "@/components/NoScroll";
 import UserDropdown from "@/components/UserDropdown";
 import { useAuthSnapshot } from "@/lib/auth-client";
-import {
-  isCreatorAdmin,
-  useCurrentPermissions,
-  type PermissionKey,
-} from "@/lib/permissions";
+import { isCreatorAdmin, useCurrentPermissions } from "@/lib/permissions";
+import type { PermissionKey } from "@/config/permissions";
 
 interface NavLink {
   href: string;
