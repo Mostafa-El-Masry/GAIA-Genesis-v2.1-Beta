@@ -183,19 +183,6 @@ export default function TodoList() {
 
   return (
     <section className="space-y-6 rounded-2xl border border-white/5 bg-slate-950/60 p-6 shadow-2xl shadow-black/20">
-      <header className="flex flex-col gap-2">
-        <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
-          Daily focus
-        </p>
-        <h2 className="text-2xl font-semibold text-white">
-          Daily trio tracker
-        </h2>
-        <p className="text-sm text-slate-400">
-          Track one Life, Programming, and Distraction task per date. Navigate
-          day-by-day to keep momentum without noise.
-        </p>
-      </header>
-
       <DayNavigator
         date={currentDay}
         onPrev={handlePrev}
@@ -578,4 +565,3 @@ function TodayIcon() {
     </svg>
   );
 }
-

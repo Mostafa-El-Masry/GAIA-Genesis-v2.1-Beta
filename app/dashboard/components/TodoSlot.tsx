@@ -57,7 +57,7 @@ export default function TodoSlot(props: Props) {
 
   return (
     <div
-      className={`rounded-xl border border-[var(--gaia-border)] bg-[var(--gaia-surface)] p-5 shadow-sm transition-all hover:shadow-md hover:border-[var(--gaia-border)] min-h-96 max-h-96 overflow-y-auto`}
+      className={`rounded-xl border border-[var(--gaia-border)] bg-[var(--gaia-surface)] p-5 shadow-sm transition-all hover:shadow-md hover:border-[var(--gaia-border)] min-h-96 max-h-96 overflow-hidden `}
     >
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -73,15 +73,11 @@ export default function TodoSlot(props: Props) {
 
       {task ? (
         <div className="flex flex-col h-full">
-          <div className="mb-4 flex-1">
+          <div className="mb-4 h-48">
             <div className="mb-3 line-clamp-2 text-lg font-bold text-[var(--gaia-text-strong)]">
               {task.title}
             </div>
-            {task.note && (
-              <div className="mb-3 line-clamp-2 text-sm text-[var(--gaia-text-muted)]">
-                {task.note}
-              </div>
-            )}
+
             {task.due_date && (
               <div className="flex items-center gap-2">
                 <span className="inline-flex items-center gap-1 rounded-md bg-[var(--gaia-border)] px-2 py-1 text-sm text-[var(--gaia-text-default)]">

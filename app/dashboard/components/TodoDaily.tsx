@@ -20,9 +20,6 @@ export default function TodoDaily() {
     <section className="rounded-2xl border border-[var(--gaia-border)] bg-[var(--gaia-surface-soft)] p-6 shadow-lg">
       <header className="mb-6 flex items-center justify-between border-b border-[var(--gaia-border)] pb-4">
         <div>
-          <h2 className="text-2xl font-bold text-[var(--gaia-text-strong)]">
-            Daily 3
-          </h2>
           <p className="text-sm text-[var(--gaia-text-muted)]">
             {today} · Asia/Kuwait
           </p>
