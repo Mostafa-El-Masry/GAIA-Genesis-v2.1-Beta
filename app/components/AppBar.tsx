@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import LogoutButton from "./LogoutButton";
@@ -50,6 +50,17 @@ export default function AppBar() {
     };
   }, [profile, status]);
 
+  const router = useRouter();
+  const [query, setQuery] = useState("");
+
+  const submitSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = query.trim();
+    if (!q) return;
+    router.push(`/search?q=${encodeURIComponent(q)}`);
+    setQuery("");
+  };
+
   useEffect(() => {
     try {
       const hideNav = pathname === "/" || pathname.startsWith("/auth");
@@ -89,7 +100,28 @@ export default function AppBar() {
           <span className="sr-only">GAIA Home</span>
         </Link>
 
-        <div className="flex-1" />
+        <div className="flex-1 flex items-center gap-3">
+          <form
+            className="w-full max-w-lg"
+            onSubmit={submitSearch}
+            role="search"
+          >
+            <label htmlFor="gaia-search" className="sr-only">
+              Search the site
+            </label>
+            <div className="relative">
+              <input
+                id="gaia-search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search site..."
+                className="w-full rounded-lg border gaia-border px-3 py-2 text-sm bg-white/6 placeholder:gaia-muted"
+              />
+            </div>
+          </form>
+
+          <div className="flex-shrink-0" />
+        </div>
 
         <div
           className="relative"
