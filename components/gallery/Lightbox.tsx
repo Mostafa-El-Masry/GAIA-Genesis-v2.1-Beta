@@ -13,6 +13,7 @@ import { getGalleryImageUrl } from "./imageUrl";
 
 const AUTOPLAY_DELAY_MS = 10000;
 const AUTOPLAY_TICK_MS = 100;
+const SWIPE_THRESHOLD = 50; // minimum pixels to trigger swipe
 
 export default function Lightbox({
   item,
@@ -44,9 +45,51 @@ export default function Lightbox({
   const autoAdvanceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Touch/swipe tracking
+  const touchStartXRef = useRef<number | null>(null);
+  const touchStartYRef = useRef<number | null>(null);
+
   // title editing state
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
+
+  // Handle touch start
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0].clientX;
+    touchStartYRef.current = e.touches[0].clientY;
+  }, []);
+
+  // Handle touch end (swipe detection)
+  const handleTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      if (touchStartXRef.current === null || touchStartYRef.current === null)
+        return;
+      if (!item || item.type !== "image") return;
+
+      const endX = e.changedTouches[0].clientX;
+      const endY = e.changedTouches[0].clientY;
+      const deltaX = endX - touchStartXRef.current;
+      const deltaY = endY - touchStartYRef.current;
+
+      // Only trigger swipe if mostly horizontal movement
+      if (Math.abs(deltaY) > Math.abs(deltaX) / 2) {
+        return; // More vertical than horizontal, ignore
+      }
+
+      // Swipe right = go to previous
+      if (deltaX > SWIPE_THRESHOLD) {
+        onPrev();
+      }
+      // Swipe left = go to next
+      else if (deltaX < -SWIPE_THRESHOLD) {
+        onNext();
+      }
+
+      touchStartXRef.current = null;
+      touchStartYRef.current = null;
+    },
+    [item, onNext, onPrev]
+  );
 
   useEffect(() => {
     if (!item) {
@@ -273,13 +316,14 @@ export default function Lightbox({
         webkitExitFullscreen?: () => Promise<void> | void;
       };
       if (doc.fullscreenElement) {
-        const exit =
-          doc.exitFullscreen ??
-          doc.webkitExitFullscreen;
+        const exit = doc.exitFullscreen ?? doc.webkitExitFullscreen;
         if (exit) {
           try {
             const result = exit.call(doc);
-            if (result && typeof (result as Promise<void>).catch === "function") {
+            if (
+              result &&
+              typeof (result as Promise<void>).catch === "function"
+            ) {
               (result as Promise<void>).catch(() => {});
             }
           } catch {
@@ -314,11 +358,7 @@ export default function Lightbox({
       const target = event.target as HTMLElement | null;
       if (!target) return false;
       const tag = target.tagName;
-      return (
-        tag === "INPUT" ||
-        tag === "TEXTAREA" ||
-        target.isContentEditable
-      );
+      return tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable;
     };
 
     function onKey(e: KeyboardEvent) {
@@ -449,11 +489,13 @@ export default function Lightbox({
         <img
           src={mediaSrc}
           alt=""
-          className="lb-media"
+          className="lb-media cursor-grab active:cursor-grabbing"
           onClick={(e) => {
             e.stopPropagation();
             onNext();
           }}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
         />
       ) : (
         <video
@@ -589,7 +631,7 @@ export default function Lightbox({
             e.stopPropagation();
             onPrev();
           }}
-          className="gaia-contrast m-4 rounded px-3 py-2"
+          className="hidden sm:block gaia-contrast m-4 rounded px-3 py-2"
         >
           ◀
         </button>
@@ -599,7 +641,7 @@ export default function Lightbox({
             e.stopPropagation();
             onNext();
           }}
-          className="gaia-contrast m-4 rounded px-3 py-2"
+          className="hidden sm:block gaia-contrast m-4 rounded px-3 py-2"
         >
           ▶
         </button>

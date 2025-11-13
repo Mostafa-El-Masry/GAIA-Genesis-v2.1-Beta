@@ -132,24 +132,46 @@ export default function AppBar() {
             <>
               <button
                 type="button"
-                className="rounded-lg border gaia-border px-3 py-1.5 text-sm font-semibold gaia-hover-soft transition"
+                className="flex items-center gap-2 rounded-lg border gaia-border px-3 py-1.5 text-sm font-semibold gaia-hover-soft transition"
                 aria-haspopup="true"
                 aria-expanded={open}
                 onFocus={() => handleToggle(true)}
                 onBlur={() => handleToggle(false)}
               >
-                {title}
+                {/* Avatar with initials */}
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-xs font-bold text-white">
+                  {title
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")
+                    .toUpperCase()
+                    .slice(0, 2)}
+                </div>
+                <span>{title}</span>
               </button>
               {open && (
-                <div className="gaia-glass gaia-border absolute right-0 top-[calc(100%+0.5rem)] min-w-[220px] rounded-lg border p-3 shadow-lg">
-                  <div className="mb-3 text-xs uppercase tracking-wide gaia-muted">
-                    Signed in as
+                <div className="gaia-glass gaia-border absolute right-0 top-[calc(100%+0.5rem)] min-w-[240px] rounded-lg border p-3 shadow-lg z-50">
+                  <div className="mb-3 flex items-center gap-3 pb-3 border-b gaia-border">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-sm font-bold text-white">
+                      {title
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")
+                        .toUpperCase()
+                        .slice(0, 2)}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold truncate">
+                        {title}
+                      </div>
+                      {email && (
+                        <div className="break-all text-xs gaia-muted truncate">
+                          {email}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="text-sm font-semibold">{title}</div>
-                  {email && (
-                    <div className="break-all text-xs gaia-muted">{email}</div>
-                  )}
-                  <div className="mt-4">
+                  <div className="mt-3">
                     <LogoutButton className="w-full rounded-lg border gaia-border px-3 py-1.5 text-sm font-medium gaia-hover-soft" />
                   </div>
                 </div>

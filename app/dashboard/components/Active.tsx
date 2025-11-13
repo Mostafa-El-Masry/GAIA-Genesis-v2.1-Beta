@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -6,7 +6,13 @@ import { listBuilds } from "@/app/labs/lib/labs";
 import { hasVault } from "@/app/ELEUTHIA/lib/storage";
 import { readJSON, waitForUserStorage } from "@/lib/user-storage";
 
-type Result = { conceptId: string; score: number; total: number; completedAt: number; notes?: string };
+type Result = {
+  conceptId: string;
+  score: number;
+  total: number;
+  completedAt: number;
+  notes?: string;
+};
 
 export default function Active() {
   const [progress, setProgress] = useState<Record<string, boolean>>({});
@@ -41,9 +47,15 @@ export default function Active() {
     };
   }, []);
 
-  const unlocked = useMemo(() => Object.values(progress).filter(Boolean).length, [progress]);
+  const unlocked = useMemo(
+    () => Object.values(progress).filter(Boolean).length,
+    [progress]
+  );
   const last = useMemo(
-    () => results.slice().sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0))[0],
+    () =>
+      results
+        .slice()
+        .sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0))[0],
     [results]
   );
 
@@ -53,40 +65,45 @@ export default function Active() {
       eyebrow: "Tower",
       value: unlocked,
       helper: "nodes unlocked",
-      accent: "from-rose-500/30 via-transparent to-transparent text-rose-100",
+      accent: "from-error/20 via-transparent to-transparent",
     },
     {
       href: "/apollo/academy",
       eyebrow: "Last Academy score",
       value: last ? `${last.score}/${last.total}` : "\u2014",
-      helper: last ? new Date(last.completedAt).toLocaleString() : "No sessions yet",
-      accent: "from-sky-500/30 via-transparent to-transparent text-sky-100",
+      helper: last
+        ? new Date(last.completedAt).toLocaleString()
+        : "No sessions yet",
+      accent: "from-info/20 via-transparent to-transparent",
     },
     {
       href: "/Labs",
       eyebrow: "Labs builds",
       value: buildCount,
       helper: "completed concepts",
-      accent: "from-amber-500/30 via-transparent to-transparent text-amber-100",
+      accent: "from-warning/20 via-transparent to-transparent",
     },
     {
       href: "/ELEUTHIA",
       eyebrow: "ELEUTHIA",
       value: vault ? "Ready" : "Setup",
       helper: vault ? "Vault present" : "Create your vault",
-      accent: "from-emerald-500/30 via-transparent to-transparent text-emerald-100",
+      accent: "from-success/20 via-transparent to-transparent",
     },
   ];
 
   return (
-    <section className="space-y-6 rounded-2xl border border-white/5 bg-gradient-to-br from-slate-950 via-slate-900/70 to-slate-950 p-6 shadow-2xl shadow-black/40">
+    <section className="space-y-6 rounded-2xl border border-base-200 dark:border-base-700 bg-base-100 dark:bg-base-900 p-6 shadow-lg">
       <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Live snapshot</p>
-          <h2 className="text-2xl font-semibold text-white">Active</h2>
+          <p className="text-xs uppercase tracking-[0.3em] text-base-content/50">
+            Live snapshot
+          </p>
+          <h2 className="text-2xl font-semibold text-base-content">Active</h2>
         </div>
-        <p className="text-sm text-slate-400 max-w-sm">
-          Quick health check across the tower, academy, labs, and vault. Tap any tile to drill in.
+        <p className="text-sm text-base-content/70 max-w-sm">
+          Quick health check across the tower, academy, labs, and vault. Tap any
+          tile to drill in.
         </p>
       </header>
 
@@ -95,13 +112,19 @@ export default function Active() {
           <Link
             key={card.href}
             href={card.href}
-            className="group relative overflow-hidden rounded-2xl border border-white/10 bg-slate-900/60 p-4 text-white transition hover:-translate-y-0.5 hover:border-white/30"
+            className="group relative overflow-hidden rounded-xl border border-base-300 dark:border-base-600 bg-base-50 dark:bg-base-800 p-4 text-base-content transition hover:shadow-md hover:border-base-400 dark:hover:border-base-500"
           >
-            <div className={`pointer-events-none absolute inset-0 opacity-70 blur-2xl bg-gradient-to-br ${card.accent}`} />
+            <div
+              className={`pointer-events-none absolute inset-0 opacity-40 blur-2xl bg-gradient-to-br ${card.accent}`}
+            />
             <div className="relative z-10">
-              <div className="text-xs uppercase tracking-wide text-slate-300">{card.eyebrow}</div>
-              <div className="mt-2 text-3xl font-semibold">{card.value}</div>
-              <div className="text-xs text-slate-300">{card.helper}</div>
+              <div className="text-xs uppercase tracking-wide text-base-content/60">
+                {card.eyebrow}
+              </div>
+              <div className="mt-2 text-3xl font-semibold text-base-content">
+                {card.value}
+              </div>
+              <div className="text-xs text-base-content/60">{card.helper}</div>
             </div>
           </Link>
         ))}

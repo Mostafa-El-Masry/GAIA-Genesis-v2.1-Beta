@@ -18,6 +18,7 @@ import {
 import type { GalleryItem } from "@/components/gallery/types";
 import { deriveAutoTags, AUTO_TAG_VERSION } from "@/components/gallery/tagging";
 import PermissionGate from "@/components/permissions/PermissionGate";
+import ProfilesCard from "./sections/ProfilesCard";
 
 const BUTTONS: ButtonStyle[] = ["solid", "outline", "ghost"];
 const SEARCHES: SearchStyle[] = ["rounded", "pill", "underline"];
@@ -38,7 +39,7 @@ type ManifestResponse = {
   items?: GalleryItem[];
 };
 
-type TabId = "appearance" | "gallery" | "users";
+type TabId = "appearance" | "gallery" | "profiles" | "users";
 
 async function fetchGalleryManifest(): Promise<GalleryItem[]> {
   try {
@@ -75,6 +76,7 @@ export default function SettingsPage() {
   const availableTabs = useMemo(() => {
     const tabs: Array<{ id: TabId; label: string }> = [
       { id: "appearance", label: "Appearance" },
+      { id: "profiles", label: "Profiles" },
       { id: "gallery", label: "Gallery" },
       { id: "users", label: "Users" },
     ];
@@ -372,6 +374,12 @@ export default function SettingsPage() {
                 archive.
               </p>
             </section>
+          </>
+        )}
+
+        {activeTab === "profiles" && (
+          <>
+            <ProfilesCard />
           </>
         )}
 
