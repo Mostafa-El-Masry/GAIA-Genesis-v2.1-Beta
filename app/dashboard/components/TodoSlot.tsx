@@ -2,6 +2,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import {
+  Heart,
+  Briefcase,
+  Gamepad2,
+  Trash2,
+  Check,
+  SkipForward,
+  Calendar,
+} from "lucide-react";
 import type { Category, Task } from "../hooks/useTodoDaily";
 import TodoQuickAdd from "./TodoQuickAdd";
 
@@ -44,105 +53,70 @@ export default function TodoSlot(props: Props) {
     onEdit,
   } = props;
   const [showAdd, setShowAdd] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const catStyle = useMemo(() => styleForCategory(category), [category]);
 
   return (
     <div
-      className={`rounded-xl border-2 border-base-300 p-5 shadow-sm transition-all hover:shadow-md hover:border-base-400 ${catStyle.bg}`}
+      className={`rounded-xl border border-[var(--gaia-border)] bg-[var(--gaia-surface)] p-5 shadow-sm transition-all hover:shadow-md hover:border-[var(--gaia-border)] min-h-96 max-h-96 overflow-y-auto`}
     >
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className={`font-bold text-lg ${catStyle.text}`}>
+          {categoryIcon(category)}
+          <span className={`font-bold text-lg text-[var(--gaia-text-strong)]`}>
             {labelOf(category)}
           </span>
-          <span className="badge badge-ghost badge-sm">Today</span>
-        </div>
-        <div className="relative">
-          <button
-            className="btn btn-ghost btn-xs hover:bg-base-300"
-            onClick={() => setMenuOpen((x) => !x)}
-          >
-            ⋯
-          </button>
-          {menuOpen && task && (
-            <div className="absolute right-0 z-10 mt-1 w-56 rounded-lg border border-base-300 bg-base-100 p-2 shadow-lg">
-              <button
-                className="btn btn-ghost btn-sm w-full justify-start"
-                onClick={() => {
-                  onEdit(task.id, { pinned: !task.pinned });
-                  setMenuOpen(false);
-                }}
-              >
-                {task.pinned ? "Unpin" : "Pin"}
-              </button>
-              <button
-                className="btn btn-ghost btn-sm w-full justify-start"
-                onClick={() => {
-                  onEdit(task.id, {
-                    priority: Math.min(
-                      3,
-                      (task.priority + 1) as 1 | 2 | 3
-                    ) as any,
-                  });
-                  setMenuOpen(false);
-                }}
-              >
-                Increase priority
-              </button>
-              <button
-                className="btn btn-ghost btn-sm w-full justify-start text-error"
-                onClick={() => {
-                  onDelete(task.id);
-                  setMenuOpen(false);
-                }}
-              >
-                Delete task
-              </button>
-            </div>
-          )}
+          <span className="rounded-md bg-[var(--gaia-border)] px-2 py-1 text-xs font-medium text-[var(--gaia-text-muted)]">
+            Today
+          </span>
         </div>
       </div>
 
       {task ? (
-        <div>
-          <div className="mb-2 line-clamp-1 text-lg font-bold">
-            {task.title}
-          </div>
-          {task.note && (
-            <div className="mb-3 line-clamp-2 text-sm opacity-75">
-              {task.note}
+        <div className="flex flex-col h-full">
+          <div className="mb-4 flex-1">
+            <div className="mb-3 line-clamp-2 text-lg font-bold text-[var(--gaia-text-strong)]">
+              {task.title}
             </div>
-          )}
-          <div className="mb-4 flex flex-wrap items-center gap-2">
-            {task.pinned && (
-              <span className="badge badge-primary badge-lg">★ Pinned</span>
+            {task.note && (
+              <div className="mb-3 line-clamp-2 text-sm text-[var(--gaia-text-muted)]">
+                {task.note}
+              </div>
             )}
-            <span className={`badge badge-lg font-bold ${catStyle.text}`}>
-              P{task.priority}
-            </span>
             {task.due_date && (
-              <span className="badge badge-ghost badge-lg">
-                📅 {task.due_date}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1 rounded-md bg-[var(--gaia-border)] px-2 py-1 text-sm text-[var(--gaia-text-default)]">
+                  <Calendar size={16} /> {task.due_date}
+                </span>
+              </div>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              className="btn btn-success btn-sm w-full"
-              onClick={() => onDone(category)}
-            >
-              ✓ Done
-            </button>
-            <button
-              className="btn btn-warning btn-sm"
-              onClick={() => onSkip(category)}
-            >
-              Skip
-            </button>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <button
+                className="rounded-lg bg-[var(--gaia-negative)] px-3 py-2 font-semibold text-white transition-opacity hover:opacity-90"
+                onClick={() => onDelete(task.id)}
+                title="Delete task"
+              >
+                <Trash2 size={18} />
+              </button>
+              <button
+                className="flex-1 rounded-lg bg-[var(--gaia-warning)] px-3 py-2 font-semibold text-[#000] transition-opacity hover:opacity-90"
+                onClick={() => onSkip(category)}
+                title="Skip this task"
+              >
+                <SkipForward size={18} className="mx-auto" />
+              </button>
+              <button
+                className="flex-1 rounded-lg bg-[var(--gaia-positive)] px-3 py-2 font-semibold text-[#000] transition-opacity hover:opacity-90"
+                onClick={() => onDone(category)}
+                title="Mark as done"
+              >
+                <Check size={18} className="mx-auto" />
+              </button>
+            </div>
             {hasAlternate && (
               <button
-                className="btn btn-outline btn-sm"
+                className="w-full rounded-lg border border-[var(--gaia-border)] px-3 py-2 font-semibold text-[var(--gaia-text-default)] transition-colors hover:bg-[var(--gaia-border)]"
                 onClick={() => onNext(category)}
               >
                 Next ▸
@@ -152,12 +126,12 @@ export default function TodoSlot(props: Props) {
         </div>
       ) : (
         <div>
-          <div className="mb-3 text-center text-sm opacity-60 py-2">
+          <div className="mb-3 py-2 text-center text-sm text-[var(--gaia-text-muted)]">
             {labelOf(category)} — No task today
           </div>
           {!showAdd ? (
             <button
-              className="btn btn-primary btn-sm w-full"
+              className="w-full rounded-lg bg-[var(--gaia-contrast-bg)] px-4 py-2 font-semibold text-[var(--gaia-contrast-text)] transition-opacity hover:opacity-90"
               onClick={() => setShowAdd(true)}
             >
               + Quick Add
@@ -181,13 +155,12 @@ function labelOf(c: Category) {
   return "Distraction";
 }
 
+function categoryIcon(c: Category) {
+  if (c === "life") return <Heart size={20} className="text-teal-500" />;
+  if (c === "work") return <Briefcase size={20} className="text-indigo-500" />;
+  return <Gamepad2 size={20} className="text-amber-500" />;
+}
+
 function styleForCategory(c: Category) {
-  switch (c) {
-    case "life":
-      return { bg: "bg-base-100", text: "text-teal-500" };
-    case "work":
-      return { bg: "bg-base-100", text: "text-indigo-500" };
-    case "distraction":
-      return { bg: "bg-base-100", text: "text-amber-500" };
-  }
+  return { bg: "", text: "" };
 }

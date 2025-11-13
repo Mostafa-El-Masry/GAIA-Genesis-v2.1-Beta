@@ -2,64 +2,56 @@
 "use client";
 
 import { useState } from "react";
+import { X } from "lucide-react";
 import type { Category } from "../hooks/useTodoDaily";
 
 type Props = {
   category: Category;
-  onAdd: (category: Category, title: string, note?: string, priority?: 1|2|3, pinned?: boolean) => void;
+  onAdd: (
+    category: Category,
+    title: string,
+    note?: string,
+    priority?: 1 | 2 | 3,
+    pinned?: boolean
+  ) => void;
   onClose?: () => void;
 };
 
 export default function TodoQuickAdd({ category, onAdd, onClose }: Props) {
   const [title, setTitle] = useState("");
-  const [note, setNote] = useState("");
-  const [priority, setPriority] = useState<1|2|3>(2);
-  const [pinned, setPinned] = useState(false);
 
   return (
-    <div className="mt-3 rounded-md border border-base-300 p-3">
-      <div className="mb-2 text-sm opacity-70">Quick Add — {labelOf(category)}</div>
-      <div className="flex flex-col gap-2">
+    <div className="mt-3 rounded-lg border border-[var(--gaia-border)] bg-[var(--gaia-surface-soft)] p-4">
+      <div className="mb-3 text-sm font-semibold text-[var(--gaia-text-muted)]">
+        Quick Add — {labelOf(category)}
+      </div>
+      <div className="flex flex-col gap-3">
         <input
-          className="input input-bordered w-full"
+          className="w-full rounded-lg border border-[var(--gaia-border)] bg-[var(--gaia-surface)] px-3 py-2 text-[var(--gaia-text-default)] placeholder-[var(--gaia-text-muted)] focus:border-[var(--gaia-contrast-bg)] focus:outline-none focus:ring-2 focus:ring-[var(--gaia-contrast-bg)]/20"
           placeholder="Task title…"
           value={title}
-          onChange={(e)=>setTitle(e.target.value)}
+          onChange={(e) => setTitle(e.target.value)}
+          autoFocus
         />
-        <textarea
-          className="textarea textarea-bordered w-full"
-          placeholder="Note (optional)…"
-          value={note}
-          onChange={(e)=>setNote(e.target.value)}
-          rows={2}
-        />
-        <div className="flex items-center gap-3">
-          <label className="label cursor-pointer gap-2">
-            <span className="label-text">Priority</span>
-            <select className="select select-bordered select-sm" value={priority} onChange={(e)=>setPriority(Number(e.target.value) as 1|2|3)}>
-              <option value={3}>3 (High)</option>
-              <option value={2}>2 (Med)</option>
-              <option value={1}>1 (Low)</option>
-            </select>
-          </label>
-          <label className="label cursor-pointer gap-2">
-            <span className="label-text">Pinned</span>
-            <input type="checkbox" className="toggle" checked={pinned} onChange={(e)=>setPinned(e.target.checked)} />
-          </label>
-          <div className="flex-1" />
+        <div className="flex gap-2">
           <button
-            className="btn btn-primary btn-sm"
+            className="flex-1 rounded-lg bg-[var(--gaia-contrast-bg)] px-4 py-2 font-semibold text-[var(--gaia-contrast-text)] transition-opacity hover:opacity-90 disabled:opacity-50"
             disabled={!title.trim()}
-            onClick={()=>{
+            onClick={() => {
               if (!title.trim()) return;
-              onAdd(category, title, note || undefined, priority, pinned);
-              setTitle(""); setNote(""); setPriority(2); setPinned(false);
+              onAdd(category, title, undefined, 2, false);
+              setTitle("");
               onClose?.();
             }}
           >
             Add
           </button>
-          <button className="btn btn-ghost btn-sm" onClick={onClose}>Cancel</button>
+          <button
+            className="rounded-lg border border-[var(--gaia-border)] px-4 py-2 font-semibold text-[var(--gaia-text-default)] transition-colors hover:bg-[var(--gaia-border)]"
+            onClick={onClose}
+          >
+            <X size={18} />
+          </button>
         </div>
       </div>
     </div>

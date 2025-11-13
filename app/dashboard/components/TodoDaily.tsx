@@ -17,14 +17,20 @@ export default function TodoDaily() {
   } = useTodoDaily();
 
   return (
-    <section className="rounded-2xl border border-base-300 bg-gradient-to-br from-base-100 to-base-200 p-6 shadow-md">
-      <header className="mb-6 flex items-center justify-between border-b border-base-300 pb-4">
+    <section className="rounded-2xl border border-[var(--gaia-border)] bg-[var(--gaia-surface-soft)] p-6 shadow-lg">
+      <header className="mb-6 flex items-center justify-between border-b border-[var(--gaia-border)] pb-4">
         <div>
-          <h2 className="text-2xl font-bold">Daily 3</h2>
-          <p className="text-sm opacity-70">{today} · Asia/Kuwait</p>
+          <h2 className="text-2xl font-bold text-[var(--gaia-text-strong)]">
+            Daily 3
+          </h2>
+          <p className="text-sm text-[var(--gaia-text-muted)]">
+            {today} · Asia/Kuwait
+          </p>
         </div>
         <div className="text-right">
-          <span className="badge badge-lg badge-primary">Today's Focus</span>
+          <span className="inline-block rounded-lg bg-[var(--gaia-contrast-bg)] px-3 py-1 text-sm font-semibold text-[var(--gaia-contrast-text)]">
+            Today's Focus
+          </span>
         </div>
       </header>
 
