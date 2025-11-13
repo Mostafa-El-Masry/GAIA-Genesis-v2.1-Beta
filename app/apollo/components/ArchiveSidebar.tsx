@@ -50,6 +50,7 @@ export default function ArchiveSidebar({
   sectionId?: string;
   setSectionId: (id?: string) => void;
 }) {
+  const [open, setOpen] = useState(true);
   const [newTopic, setNewTopic] = useState("");
   const [filter, setFilter] = useState("");
 
@@ -95,88 +96,89 @@ export default function ArchiveSidebar({
   return (
     <aside className="gaia-surface flex h-full flex-col gap-5 rounded-3xl border gaia-border p-6 shadow-lg ring-1 ring-black/5">
       <header className="flex items-center justify-end">
-        {sectionId ? (
-          <Link
-            href={`/apollo/section/${sectionId}`}
-            className="flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-600 text-white shadow-lg shadow-sky-900/25"
-            title="Open active section (full view)"
-          >
-            <BookIcon />
-          </Link>
-        ) : (
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-600 text-white shadow-lg shadow-sky-900/25">
-            <BookIcon />
-          </div>
-        )}
+        <button
+          type="button"
+          onClick={() => setOpen((s) => !s)}
+          aria-pressed={!open}
+          title={open ? "Collapse archives" : "Open archives"}
+          className="flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-600 text-white shadow-lg shadow-sky-900/25"
+        >
+          <BookIcon />
+        </button>
       </header>
 
-      <div className="space-y-3">
-        <select
-          className={inputStyles}
-          value={current?.id ?? ""}
-          onChange={(e) => setTopicId(e.target.value)}
-        >
-          {topics.length === 0 && <option value="">No topics yet</option>}
-          {topics.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.title}
-            </option>
-          ))}
-        </select>
-        <div className="flex gap-3">
-          <input
-            className={inputStyles}
-            placeholder="New topic title..."
-            value={newTopic}
-            onChange={(e) => setNewTopic(e.target.value)}
-          />
-          <button className={buttonStyles} onClick={handleAddTopic}>
-            Add
-          </button>
-        </div>
-        <input
-          className={inputStyles}
-          placeholder="Filter sections..."
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-[0.35em] gaia-muted">
-          Sections
-        </p>
-        <div className="max-h-[55vh] space-y-2 overflow-y-auto pr-1">
-          {visibleSections.map((section) => {
-            const isActive = section.id === sectionId;
-            return (
-              <button
-                key={section.id}
-                className={`w-full rounded-2xl border px-4 py-3 text-left shadow-sm transition ${
-                  isActive
-                    ? "border-sky-700 bg-sky-700 text-white shadow-sky-900/30"
-                    : "gaia-border gaia-surface hover:shadow"
-                }`}
-                onClick={() => setSectionId(section.id)}
-              >
-                <div className="font-semibold gaia-strong">{section.heading}</div>
-                <div className="text-xs gaia-muted">
-                  {new Date(section.editedAt).toLocaleString()}
-                </div>
+      {open && (
+        <>
+          <div className="space-y-3">
+            <select
+              className={inputStyles}
+              value={current?.id ?? ""}
+              onChange={(e) => setTopicId(e.target.value)}
+            >
+              {topics.length === 0 && <option value="">No topics yet</option>}
+              {topics.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.title}
+                </option>
+              ))}
+            </select>
+            <div className="flex gap-3">
+              <input
+                className={inputStyles}
+                placeholder="New topic title..."
+                value={newTopic}
+                onChange={(e) => setNewTopic(e.target.value)}
+              />
+              <button className={buttonStyles} onClick={handleAddTopic}>
+                Add
               </button>
-            );
-          })}
-
-          {visibleSections.length === 0 && (
-            <div className="rounded-2xl border border-dashed gaia-border px-4 py-6 text-center text-sm gaia-muted">
-              {current
-                ? "No sections match your filter."
-                : "Create a topic to start archiving."}
             </div>
-          )}
-        </div>
-      </div>
+            <input
+              className={inputStyles}
+              placeholder="Filter sections..."
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.35em] gaia-muted">
+              Sections
+            </p>
+            <div className="max-h-[55vh] space-y-2 overflow-y-auto pr-1">
+              {visibleSections.map((section) => {
+                const isActive = section.id === sectionId;
+                return (
+                  <button
+                    key={section.id}
+                    className={`w-full rounded-2xl border px-4 py-3 text-left shadow-sm transition ${
+                      isActive
+                        ? "border-sky-700 bg-sky-700 text-white shadow-sky-900/30"
+                        : "gaia-border gaia-surface hover:shadow"
+                    }`}
+                    onClick={() => setSectionId(section.id)}
+                  >
+                    <div className="font-semibold gaia-strong">
+                      {section.heading}
+                    </div>
+                    <div className="text-xs gaia-muted">
+                      {new Date(section.editedAt).toLocaleString()}
+                    </div>
+                  </button>
+                );
+              })}
+
+              {visibleSections.length === 0 && (
+                <div className="rounded-2xl border border-dashed gaia-border px-4 py-6 text-center text-sm gaia-muted">
+                  {current
+                    ? "No sections match your filter."
+                    : "Create a topic to start archiving."}
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </aside>
   );
 }
-

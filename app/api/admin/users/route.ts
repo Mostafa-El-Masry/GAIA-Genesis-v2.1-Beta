@@ -28,15 +28,15 @@ type CreateUserPayload = {
 
 export async function GET() {
   const adminClient = createSupabaseAdminClient();
-
   if (!adminClient) {
-    return NextResponse.json(
-      {
-        error:
-          "Supabase service-role credentials are not configured. Set SUPABASE_SERVICE_ROLE_KEY in your environment.",
-      },
-      { status: 503 }
+    // In local/dev environments we may not have the Supabase service role key.
+    // Return an empty users list instead of a 5xx so the UI can render and
+    // fall back gracefully. Log a warning so developers know the admin proxy
+    // is not available.
+    console.warn(
+      "/api/admin/users GET: Supabase admin client not configured — returning empty users list"
     );
+    return NextResponse.json({ users: [] });
   }
 
   try {
@@ -114,14 +114,13 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const adminClient = createSupabaseAdminClient();
-
   if (!adminClient) {
+    console.warn(
+      "/api/admin/users POST: Supabase admin client not configured — proxy unavailable"
+    );
     return NextResponse.json(
-      {
-        error:
-          "Supabase service-role credentials are not configured. Set SUPABASE_SERVICE_ROLE_KEY in your environment.",
-      },
-      { status: 503 }
+      { error: "Supabase admin proxy unavailable." },
+      { status: 501 }
     );
   }
 

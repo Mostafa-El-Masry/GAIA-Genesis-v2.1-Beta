@@ -18,7 +18,15 @@ function json(data: unknown, status = 200) {
 
 export async function GET(req: Request) {
   const admin = createSupabaseAdminClient();
-  if (!admin) return json({ error: "Supabase not configured on server" }, 500);
+  // If Supabase service role is not configured on this machine (dev),
+  // return an empty storage object so the client can fall back to the
+  // browser-side mechanism without spamming server errors in the log.
+  if (!admin) {
+    console.warn(
+      "/api/user-storage GET: Supabase admin client not configured — returning empty storage fallback"
+    );
+    return json({ storage: {} });
+  }
 
   const auth = req.headers.get("authorization") ?? "";
   const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
@@ -52,7 +60,12 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const admin = createSupabaseAdminClient();
-  if (!admin) return json({ error: "Supabase not configured on server" }, 500);
+  if (!admin) {
+    console.warn(
+      "/api/user-storage POST: Supabase admin client not configured — proxy unavailable"
+    );
+    return json({ error: "Supabase not configured on server" }, 501);
+  }
 
   const auth = req.headers.get("authorization") ?? "";
   const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
@@ -102,7 +115,12 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   const admin = createSupabaseAdminClient();
-  if (!admin) return json({ error: "Supabase not configured on server" }, 500);
+  if (!admin) {
+    console.warn(
+      "/api/user-storage DELETE: Supabase admin client not configured — proxy unavailable"
+    );
+    return json({ error: "Supabase not configured on server" }, 501);
+  }
 
   const auth = req.headers.get("authorization") ?? "";
   const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;

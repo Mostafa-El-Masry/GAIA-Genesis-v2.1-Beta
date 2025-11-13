@@ -1,10 +1,12 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import LogoutButton from "@/app/components/LogoutButton";
 import { useAuthSnapshot } from "@/lib/auth-client";
 import { capitalizeWords, normaliseEmail } from "@/lib/strings";
+import { getItem, waitForUserStorage } from "@/lib/user-storage";
+import { getCreatorAdminEmail } from "@/config/permissions";
 
 export default function UserDropdown() {
   const { profile, status } = useAuthSnapshot();
@@ -31,19 +33,72 @@ export default function UserDropdown() {
     }
   };
 
+  // saved profiles (loaded below) — declare early so hooks using it don't hit TDZ
+  const [savedProfiles, setSavedProfiles] = useState<
+    Array<{ email: string; name: string }>
+  >([]);
+
   const { title, email, isLoggedIn } = useMemo(() => {
-    const rawName = profile?.name?.trim() ?? null;
-    const name = rawName ? capitalizeWords(rawName) : null;
     const emailRaw = profile?.email ?? status?.email ?? null;
     const prettyEmail = emailRaw ? normaliseEmail(emailRaw) : null;
     const session = status?.session ?? null;
 
+    // Prefer a saved profile name if available
+    const saved = savedProfiles.find((p) => p.email === emailRaw);
+    const isCreator = emailRaw?.toLowerCase() === getCreatorAdminEmail();
+    const displayName = saved?.name || (isCreator ? "Creator" : prettyEmail);
+
     return {
-      title: name ?? "Creator",
+      title: displayName ? capitalizeWords(displayName) : "User",
       email: prettyEmail,
       isLoggedIn: Boolean(prettyEmail && session),
     };
   }, [profile, status]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        await waitForUserStorage();
+        if (cancelled) return;
+        const raw = getItem("gaia.saved-profiles");
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw) as Array<{
+              email: string;
+              name: string;
+            }>;
+            setSavedProfiles(parsed || []);
+            return;
+          } catch {
+            // ignore parse errors
+          }
+        }
+
+        // fallback to localStorage if available
+        if (typeof window !== "undefined") {
+          const local = localStorage.getItem("gaia.saved-profiles.local");
+          if (local) {
+            try {
+              const parsed = JSON.parse(local) as Array<{
+                email: string;
+                name: string;
+              }>;
+              setSavedProfiles(parsed || []);
+            } catch {
+              // ignore
+            }
+          }
+        }
+      } catch {
+        // ignore
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (!isLoggedIn) {
     return (

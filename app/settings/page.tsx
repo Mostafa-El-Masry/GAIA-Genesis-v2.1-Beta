@@ -78,42 +78,13 @@ export default function SettingsPage() {
       { id: "appearance", label: "Appearance" },
       { id: "profiles", label: "Profiles" },
       { id: "gallery", label: "Gallery" },
-      { id: "users", label: "Users" },
+      // Users tab removed to avoid server-side admin calls when proxy is not configured
     ];
     return tabs;
   }, []);
 
-  const [users, setUsers] = useState<any[] | null>(null);
-  const [usersLoading, setUsersLoading] = useState(false);
-  const [usersError, setUsersError] = useState<string | null>(null);
-
-  // Fetch users when users tab is active
-  const fetchUsers = async () => {
-    setUsersLoading(true);
-    setUsersError(null);
-    try {
-      const res = await fetch("/api/admin/users");
-      const json = await res.json();
-      if (!res.ok) {
-        throw new Error(json.error || `HTTP ${res.status}`);
-      }
-      setUsers(json.users ?? []);
-    } catch (err: any) {
-      const message = err instanceof Error ? err.message : "Unknown error";
-      console.error("Failed to fetch users", message);
-      setUsersError(message);
-    } finally {
-      setUsersLoading(false);
-    }
-  };
-
-  // Effect to fetch users when activeTab changes to 'users'
-  useEffect(() => {
-    if (activeTab === "users" && users === null && !usersLoading) {
-      void fetchUsers();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab]);
+  // Users/admin UI removed to avoid server-side admin calls when the project
+  // is running without Supabase service-role credentials (local/dev).
 
   const handleSyncGallery = useCallback(async () => {
     setSyncing(true);
@@ -466,64 +437,7 @@ export default function SettingsPage() {
           </section>
         )}
 
-        {activeTab === "users" && (
-          <section className="space-y-3 rounded-lg border gaia-border p-4">
-            <h2 className="font-medium">Users</h2>
-            <p className="text-sm gaia-muted">
-              List of users from Supabase (requires server access).
-            </p>
-
-            {usersLoading && <p className="text-sm">Loading users…</p>}
-            {usersError && (
-              <p className="text-sm text-rose-400">{usersError}</p>
-            )}
-
-            {!usersLoading && users && (
-              <div className="mt-3 overflow-hidden rounded-2xl border gaia-border">
-                <table className="min-w-full text-sm">
-                  <thead className="bg-gradient-to-r from-slate-900 to-cyan-700 text-[0.65rem] uppercase tracking-[0.3em] text-white">
-                    <tr>
-                      <th className="px-4 py-3 text-left font-semibold">ID</th>
-                      <th className="px-4 py-3 text-left font-semibold">
-                        Email
-                      </th>
-                      <th className="px-4 py-3 text-left font-semibold">
-                        Name
-                      </th>
-                      <th className="px-4 py-3 text-left font-semibold">
-                        Created
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="text-slate-700">
-                    {users.map((u: any) => (
-                      <tr key={u.id} className="border-b last:border-b-0">
-                        <td className="px-4 py-3 text-xs font-mono text-slate-600">
-                          {u.id}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-slate-800">
-                          {u.email ?? "—"}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-slate-800">
-                          {(u.user_metadata &&
-                            (u.user_metadata.full_name ||
-                              u.user_metadata.name)) ??
-                            u.user_metadata?.name ??
-                            "—"}
-                        </td>
-                        <td className="px-4 py-3 text-xs text-slate-600">
-                          {u.created_at
-                            ? new Date(u.created_at).toLocaleString()
-                            : "—"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
-        )}
+        {/* Users admin table removed to avoid server-side admin calls when proxy is not configured */}
       </main>
     </PermissionGate>
   );

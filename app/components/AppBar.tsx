@@ -7,6 +7,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import LogoutButton from "./LogoutButton";
 import { useAuthSnapshot } from "@/lib/auth-client";
 import { capitalizeWords, normaliseEmail } from "@/lib/strings";
+import { getItem, waitForUserStorage } from "@/lib/user-storage";
+import { getCreatorAdminEmail } from "@/config/permissions";
 
 /**
  * Slim App Bar
@@ -16,6 +18,9 @@ export default function AppBar() {
   const { profile, status } = useAuthSnapshot();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [savedProfiles, setSavedProfiles] = useState<
+    Array<{ email: string; name: string }>
+  >([]);
   const closeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clearCloseTimer = () => {
     if (closeTimeout.current) {
@@ -37,18 +42,28 @@ export default function AppBar() {
   };
 
   const { title, email, isLoggedIn } = useMemo(() => {
-    const rawName = profile?.name?.trim() ?? null;
-    const name = rawName ? capitalizeWords(rawName) : null;
     const emailRaw = profile?.email ?? status?.email ?? null;
     const prettyEmail = emailRaw ? normaliseEmail(emailRaw) : null;
     const session = status?.session ?? null;
 
+    // Try to get saved profile name first
+    const savedProfile = savedProfiles.find((p) => p.email === emailRaw);
+    let displayName: string | undefined = savedProfile?.name ?? undefined;
+
+    // Fallback to "Creator" for admin, or email if nothing saved
+    if (!displayName) {
+      const isCreator = emailRaw?.toLowerCase() === getCreatorAdminEmail();
+      displayName = isCreator ? "Creator" : prettyEmail ?? undefined;
+    }
+
+    const name = displayName ? capitalizeWords(displayName) : null;
+
     return {
-      title: name ?? "Creator",
+      title: name ?? "User",
       email: prettyEmail,
       isLoggedIn: Boolean(prettyEmail && session),
     };
-  }, [profile, status]);
+  }, [profile, status, savedProfiles]);
 
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -79,6 +94,22 @@ export default function AppBar() {
 
   useEffect(() => {
     setMounted(true);
+
+    // Load saved profiles
+    const loadProfiles = async () => {
+      try {
+        await waitForUserStorage();
+        const raw = getItem("gaia.saved-profiles");
+        if (raw) {
+          const profiles = JSON.parse(raw);
+          setSavedProfiles(profiles);
+        }
+      } catch {
+        // Ignore errors loading profiles
+      }
+    };
+
+    loadProfiles();
   }, []);
 
   if (!mounted || pathname === "/" || pathname.startsWith("/auth")) return null;
