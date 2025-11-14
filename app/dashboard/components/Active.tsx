@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { listBuilds } from "@/app/labs/lib/labs";
+import { listBuilds } from "@/app/apollo/labs/lib/labs";
 import { hasVault } from "@/app/ELEUTHIA/lib/storage";
 import { readJSON, waitForUserStorage } from "@/lib/user-storage";
 

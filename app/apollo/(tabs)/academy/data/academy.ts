@@ -1,8 +1,10 @@
+export type LessonLevel = "beginner" | "intermediate" | "advanced";
+
 export type Lesson = {
   id: string;
   title: string;
   summary: string;
-  level: "beginner" | "intermediate" | "advanced";
+  level: LessonLevel;
   type?: "project" | "lesson";
   body: string;
 };
@@ -10,7 +12,7 @@ export type Lesson = {
 export type Section = {
   id: string;
   title: string;
-  level: "beginner" | "intermediate" | "advanced";
+  level: LessonLevel;
   lessons: Lesson[];
 };
 
@@ -31,339 +33,594 @@ export type MicroConcept = {
   lesson: string;
 };
 
+/**
+ * HTML & CSS curriculum skeleton inspired by The Odin Project,
+ * but with original wording and empty bodies so you can fill them.
+ */
+
+const sections: Section[] = [
+  {
+    id: "html-css-m1",
+    title: "HTML Foundations",
+    level: "beginner",
+    lessons: [
+      {
+        id: "html-css-m1-l1",
+        title: "HTML, CSS & JavaScript overview",
+        summary: "How HTML, CSS, and JavaScript work together to build a page.",
+        level: "beginner",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m1-l2",
+        title: "Elements and tags",
+        summary: "Understanding elements, tags, and how they form a DOM tree.",
+        level: "beginner",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m1-l3",
+        title: "HTML boilerplate & document structure",
+        summary: "The minimum HTML needed for a valid document, and how it is structured.",
+        level: "beginner",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m1-l4",
+        title: "Inspecting markup with DevTools",
+        summary: "Using browser DevTools to inspect and debug your HTML.",
+        level: "beginner",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m1-l5",
+        title: "Document head & metadata",
+        summary: "The purpose of the <head>, meta tags, and how browsers use them.",
+        level: "beginner",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m1-l6",
+        title: "Attributes & global defaults",
+        summary: "Common attributes, global attributes, and how defaults work.",
+        level: "beginner",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m1-l7",
+        title: "Productivity with Emmet and snippets",
+        summary: "Speeding up HTML authoring using Emmet and editor snippets.",
+        level: "beginner",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m1-l8",
+        title: "Project: Recipe page",
+        summary: "Build a simple recipe page using headings, paragraphs, and lists.",
+        level: "beginner",
+        type: "project",
+        body: "",
+      },
+    ],
+  },
+  {
+    id: "html-css-m2",
+    title: "Semantic HTML & Accessibility Basics",
+    level: "beginner",
+    lessons: [
+      {
+        id: "html-css-m2-l1",
+        title: "Introduction to web accessibility",
+        summary: "Why accessibility matters and who benefits from it.",
+        level: "beginner",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m2-l2",
+        title: "Semantic HTML: using the right elements",
+        summary: "Choosing elements that describe their content, not their appearance.",
+        level: "beginner",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m2-l3",
+        title: "Landmarks & meaningful page structure",
+        summary: "Using header, main, nav, aside, and footer to shape your layout.",
+        level: "beginner",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m2-l4",
+        title: "ARIA fundamentals in plain language",
+        summary: "Where ARIA can help, and when to avoid it.",
+        level: "beginner",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m2-l5",
+        title: "Keyboard navigation & focus order",
+        summary: "Ensuring your site can be used without a mouse.",
+        level: "beginner",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m2-l6",
+        title: "Accessible images & alt text",
+        summary: "Writing useful alt text and handling decorative images.",
+        level: "beginner",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m2-l7",
+        title: "WCAG in practice",
+        summary: "A practical, non-scary introduction to WCAG AA guidelines.",
+        level: "beginner",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m2-l8",
+        title: "Project: Accessibility audit",
+        summary: "Audit an existing page and make specific accessibility improvements.",
+        level: "beginner",
+        type: "project",
+        body: "",
+      },
+    ],
+  },
+  {
+    id: "html-css-m3",
+    title: "Text, Lists & Navigation",
+    level: "beginner",
+    lessons: [
+      {
+        id: "html-css-m3-l1",
+        title: "Headings and paragraphs in depth",
+        summary: "Organising content with a sensible heading hierarchy.",
+        level: "beginner",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m3-l2",
+        title: "Inline vs block-level elements",
+        summary: "How inline and block elements behave and when to use each.",
+        level: "beginner",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m3-l3",
+        title: "Lists for content and navigation",
+        summary: "Using ordered and unordered lists for content and menus.",
+        level: "beginner",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m3-l4",
+        title: "Links and basic navigation",
+        summary: "Creating accessible nav bars and in-page links.",
+        level: "beginner",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m3-l5",
+        title: "Project: Multi-section article page",
+        summary: "Build an article page with multiple sections and navigation.",
+        level: "beginner",
+        type: "project",
+        body: "",
+      },
+    ],
+  },
+  {
+    id: "html-css-m4",
+    title: "Links, Media & Embeds",
+    level: "beginner",
+    lessons: [
+      {
+        id: "html-css-m4-l1",
+        title: "Images, figure, and figcaption",
+        summary: "Using semantic containers for images and captions.",
+        level: "beginner",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m4-l2",
+        title: "Video & audio basics",
+        summary: "Embedding media with the video and audio elements.",
+        level: "beginner",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m4-l3",
+        title: "Responsive images with srcset",
+        summary: "Serving different images to different devices.",
+        level: "beginner",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m4-l4",
+        title: "iframes and embedded content",
+        summary: "Embedding maps, players, and external widgets safely.",
+        level: "beginner",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m4-l5",
+        title: "Project: Media-rich homepage",
+        summary: "Build a small homepage showcasing media and content.",
+        level: "beginner",
+        type: "project",
+        body: "",
+      },
+    ],
+  },
+  {
+    id: "html-css-m5",
+    title: "CSS Basics",
+    level: "intermediate",
+    lessons: [
+      {
+        id: "html-css-m5-l1",
+        title: "What CSS is and how it’s applied",
+        summary: "Linking style sheets and understanding how CSS is loaded.",
+        level: "intermediate",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m5-l2",
+        title: "Selectors, declarations, and specificity",
+        summary: "How selectors match elements and which rules win.",
+        level: "intermediate",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m5-l3",
+        title: "Colors, units, and basic typography",
+        summary: "Working with px, rem, em, and setting a type scale.",
+        level: "intermediate",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m5-l4",
+        title: "Cascade and inheritance",
+        summary: "How CSS cascades and which properties inherit.",
+        level: "intermediate",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m5-l5",
+        title: "Organising simple style sheets",
+        summary: "Structuring small projects to stay readable.",
+        level: "intermediate",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m5-l6",
+        title: "Project: Style the recipe page",
+        summary: "Add consistent styling to your earlier HTML project.",
+        level: "intermediate",
+        type: "project",
+        body: "",
+      },
+    ],
+  },
+  {
+    id: "html-css-m6",
+    title: "Box Model & Layout Essentials",
+    level: "intermediate",
+    lessons: [
+      {
+        id: "html-css-m6-l1",
+        title: "The box model in practice",
+        summary: "Content, padding, border, margin, and box-sizing.",
+        level: "intermediate",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m6-l2",
+        title: "Display: block, inline, inline-block",
+        summary: "How different display values affect layout.",
+        level: "intermediate",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m6-l3",
+        title: "Spacing patterns and margin collapsing",
+        summary: "Building consistent spacing systems and avoiding surprises.",
+        level: "intermediate",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m6-l4",
+        title: "Project: Simple card layout",
+        summary: "Create a small layout of reusable content cards.",
+        level: "intermediate",
+        type: "project",
+        body: "",
+      },
+    ],
+  },
+  {
+    id: "html-css-m7",
+    title: "Flexbox Layout",
+    level: "intermediate",
+    lessons: [
+      {
+        id: "html-css-m7-l1",
+        title: "Flexbox: main axis and cross axis",
+        summary: "Understanding how flex containers arrange their children.",
+        level: "intermediate",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m7-l2",
+        title: "Direction, wrapping, and flow",
+        summary: "flex-direction, flex-wrap, and row vs column layouts.",
+        level: "intermediate",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m7-l3",
+        title: "Justify-content & align-items",
+        summary: "Controlling alignment on the main and cross axes.",
+        level: "intermediate",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m7-l4",
+        title: "Gap, alignment, and distribution",
+        summary: "Spacing and distributing items with modern flexbox features.",
+        level: "intermediate",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m7-l5",
+        title: "Project: Responsive flexbox layout",
+        summary: "Build a responsive navigation and hero layout with flexbox.",
+        level: "intermediate",
+        type: "project",
+        body: "",
+      },
+    ],
+  },
+  {
+    id: "html-css-m8",
+    title: "CSS Grid",
+    level: "intermediate",
+    lessons: [
+      {
+        id: "html-css-m8-l1",
+        title: "Introduction to CSS Grid",
+        summary: "Defining rows and columns with CSS Grid.",
+        level: "intermediate",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m8-l2",
+        title: "Placing grid items",
+        summary: "Explicit vs implicit placement and spanning tracks.",
+        level: "intermediate",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m8-l3",
+        title: "Combining Flexbox and Grid",
+        summary: "Using flexbox inside grid cells for complex layouts.",
+        level: "intermediate",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m8-l4",
+        title: "Project: Admin dashboard layout",
+        summary: "Build a simple dashboard interface using Grid and Flexbox.",
+        level: "intermediate",
+        type: "project",
+        body: "",
+      },
+    ],
+  },
+  {
+    id: "html-css-m9",
+    title: "Forms & UI Elements",
+    level: "intermediate",
+    lessons: [
+      {
+        id: "html-css-m9-l1",
+        title: "Form basics: inputs, labels, groupings",
+        summary: "Creating accessible forms with proper labels and structure.",
+        level: "intermediate",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m9-l2",
+        title: "Form semantics and validation UX",
+        summary: "HTML validation, error messages, and user-friendly forms.",
+        level: "intermediate",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m9-l3",
+        title: "Styling form controls",
+        summary: "Designing inputs, buttons, and custom controls.",
+        level: "intermediate",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m9-l4",
+        title: "Project: Sign-up form",
+        summary: "Build and style a realistic sign-up or login form.",
+        level: "intermediate",
+        type: "project",
+        body: "",
+      },
+    ],
+  },
+  {
+    id: "html-css-m10",
+    title: "Responsive Design",
+    level: "advanced",
+    lessons: [
+      {
+        id: "html-css-m10-l1",
+        title: "Intro to responsive design",
+        summary: "Why responsive design matters and what it means.",
+        level: "advanced",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m10-l2",
+        title: "Natural responsiveness & fluid layouts",
+        summary: "Making layouts that adapt without media queries.",
+        level: "advanced",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m10-l3",
+        title: "Media queries & breakpoints",
+        summary: "Targeting different screen sizes with media queries.",
+        level: "advanced",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m10-l4",
+        title: "Project: Responsive portfolio",
+        summary: "Build a small portfolio that looks good on multiple devices.",
+        level: "advanced",
+        type: "project",
+        body: "",
+      },
+    ],
+  },
+  {
+    id: "html-css-m11",
+    title: "CSS Architecture & Reuse",
+    level: "advanced",
+    lessons: [
+      {
+        id: "html-css-m11-l1",
+        title: "Utility-first vs component styles",
+        summary: "Different ways to structure your CSS for reuse.",
+        level: "advanced",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m11-l2",
+        title: "Custom properties (CSS variables)",
+        summary: "Using CSS variables for themes and design tokens.",
+        level: "advanced",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m11-l3",
+        title: "Naming conventions and structure",
+        summary: "Keeping your styles understandable over time.",
+        level: "advanced",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m11-l4",
+        title: "Project: Mini design system audit",
+        summary: "Review and refine styles in a small project.",
+        level: "advanced",
+        type: "project",
+        body: "",
+      },
+    ],
+  },
+  {
+    id: "html-css-m12",
+    title: "Transitions & Animations",
+    level: "advanced",
+    lessons: [
+      {
+        id: "html-css-m12-l1",
+        title: "CSS transitions",
+        summary: "Adding smooth changes when properties update.",
+        level: "advanced",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m12-l2",
+        title: "Transforms: scale, rotate, translate",
+        summary: "Using transform to move and scale elements.",
+        level: "advanced",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m12-l3",
+        title: "Keyframes & multi-step animations",
+        summary: "Creating more complex motion with @keyframes.",
+        level: "advanced",
+        type: "lesson",
+        body: "",
+      },
+      {
+        id: "html-css-m12-l4",
+        title: "Project: Animated hero section",
+        summary: "Design and animate a simple hero for a homepage.",
+        level: "advanced",
+        type: "project",
+        body: "",
+      },
+    ],
+  },
+];
+
 export const htmlCssPath: LearningPath = {
-  id: "html-css-foundations",
-  title: "HTML & CSS Foundations",
+  id: "foundations-html-css",
+  title: "Foundations: HTML & CSS",
   overview:
-    "Start from zero: learn how to structure pages with HTML, style them with CSS, and build layouts that feel like GAIA screens.",
+    "A step-by-step path through semantic HTML and modern CSS, from the very basics up to responsive design and animations.",
   description:
-    "This path assumes you know nothing. Each lesson gives you an explanation, concrete examples, and a tiny task to try in the CodeBin. Work from top to bottom: beginner HTML, then forms, then beginner CSS, then layout and intermediate CSS.",
-  sections: [
-    {
-      id: "html-basics",
-      title: "Beginner HTML Concepts",
-      level: "beginner",
-      lessons: [
-        {
-          id: "intro",
-          title: "What is HTML?",
-          summary:
-            "Understand what HTML is, how a document is structured, and why tags matter.",
-          level: "beginner",
-          type: "lesson",
-          body: `HTML is the language the browser uses to understand the structure of a page. It does not care about colors or fonts; it cares about *meaning*: what is a heading, what is a paragraph, what is a list, what is an image.
-
-Every document has the same basic skeleton: a DOCTYPE, an <html> element, a <head> with metadata, and a <body> with everything you actually see. If that skeleton is missing or broken, the browser will guess, and different browsers may guess differently.
-
-In this lesson you learn to read that skeleton like a map. When you open any GAIA page, you should be able to imagine the underlying HTML tree: a root, then big sections, then smaller pieces inside each section.
-
-▶ Try in CodeBin:
-- Create a brand new index.html with <!DOCTYPE html>, <html>, <head>, and <body>.
-- Inside <head>, add <title>My First GAIA Page</title>.
-- Inside <body>, add a single <p> that says: "Hello from my first structured page".`,
-        },
-        {
-          id: "headings-lists",
-          title: "Headings & text",
-          summary:
-            "Use headings, paragraphs, and lists to create a clear document outline.",
-          level: "beginner",
-          type: "lesson",
-          body: `Headings (h1–h6) create an outline for your page, just like titles and subtitles in a book. Screen readers and search engines use that outline to understand what sections exist and how they relate.
-
-A good rule: one <h1> per page, then <h2> for big sections (Dashboard, Health, Wealth), and <h3> for subsections if needed. Paragraphs (<p>) hold normal text. Lists (<ul>, <ol>, <li>) hold groups of related items, such as navigation links or todo items.
-
-When you think of GAIA, imagine each major page has a single h1 at the top, then sections with h2 headings like "Today’s focus", "Health snapshot", or "Gallery".
-
-▶ Try in CodeBin:
-- Under your existing <p>, add an <h1> with the title of the page.
-- Add an <h2> called "Sections" and below it an unordered list (<ul>) with 3 <li> items: Dashboard, Gallery, Wealth.
-- Add another <h2> called "Notes" and one or two paragraphs (<p>) beneath it.`,
-        },
-        {
-          id: "links-media",
-          title: "Links & images",
-          summary:
-            "Create navigation links and embed images with correct alt text.",
-          level: "beginner",
-          type: "lesson",
-          body: `Links (<a>) connect one page to another. Good link text describes where you are going: "Go to Dashboard" is better than "Click here". Use the href attribute to point to a URL or another HTML file.
-
-Images (<img>) embed pictures into your page. The src attribute points to the image file. The alt attribute describes the image for users who cannot see it (screen readers) or for when the image fails to load.
-
-In GAIA you might have links to /dashboard or /gallery, and images that represent your avatar, the GAIA logo, or screenshots of your trackers.
-
-▶ Try in CodeBin:
-- Under your "Sections" list, add a <nav> that contains three <a> links: Dashboard, Gallery, and Wealth. For now, use "#" as the href.
-- Add an <img> with src="https://via.placeholder.com/200" and alt="Temporary placeholder image".
-- Refresh the preview and confirm that the link text and image appear correctly.`,
-        },
-        {
-          id: "tables",
-          title: "Tables for data",
-          summary:
-            "Display tabular data with table, thead, tbody, tr, th, and td.",
-          level: "beginner",
-          type: "lesson",
-          body: `Tables are for data that naturally forms rows and columns: for example, a monthly interest table in Wealth, or a log of insulin doses in Health. They are *not* for general layout.
-
-A basic table uses <table> as the wrapper, <thead> for header rows, <tbody> for data rows, <tr> for table rows, <th> for header cells, and <td> for normal cells. Screen readers rely on <th> to understand what each column means.
-
-In GAIA you might have a table with columns like "Month", "Deposit", "Interest", "Total". Each row represents one month of your plan.
-
-▶ Try in CodeBin:
-- Under your existing content, add a <table> with a <thead> that has a single row (<tr>) with three headers (<th>): Month, Saved, Notes.
-- Add a <tbody> with two rows. Each row should have matching <td> cells, such as "January", "5000 EGP", "Started my plan".
-- Inspect the preview and confirm that the data lines up in columns.`,
-        },
-        {
-          id: "semantics",
-          title: "Semantic layout",
-          summary:
-            "Use main, nav, section, and footer to structure a full page.",
-          level: "beginner",
-          type: "lesson",
-          body: `Semantic elements are special tags that describe the *role* of a region: <main> for primary content, <nav> for navigation, <header> and <footer> for the top and bottom, <section> for grouped content, and <article> for a self-contained piece.
-
-Using these instead of many anonymous <div> elements makes your markup easier to read and more accessible. Screen readers can jump directly to landmarks like main or nav.
-
-Think of a GAIA page as: header with logo and search, nav for main links, main for the core content, maybe aside for secondary info, and footer for legal or version info.
-
-▶ Try in CodeBin:
-- Wrap your main content in a <main> element.
-- Wrap your navigation links in a <nav>.
-- Add a <header> above everything with a simple title, and a <footer> at the bottom that says "Built with GAIA".`,
-        },
-      ],
-    },
-    {
-      id: "forms",
-      title: "HTML Forms",
-      level: "beginner",
-      lessons: [
-        {
-          id: "form-basics",
-          title: "Form structure",
-          summary:
-            "Build a basic form with labels, inputs, and a submit button.",
-          level: "beginner",
-          type: "lesson",
-          body: `Forms are how users send data to your app. Even if GAIA later uses JavaScript or APIs, the foundation is the same: a <form> element containing labeled inputs and a submit button.
-
-Every input should have a <label>. You link them with the for attribute on the label and the id on the input. The name attribute on the input is what identifies the field when data is submitted.
-
-In GAIA you might use forms for adding tasks, logging health readings, or saving wealth plan settings.
-
-▶ Try in CodeBin:
-- Create a new <section> titled "Quick task".
-- Inside it, add a <form>.
-- Add a label+input pair for "Task title" (type="text") and another for "Due date" (type="date").
-- Add a <button type="submit">Add task</button> and see how it looks in the preview.`,
-        },
-        {
-          id: "form-input-types",
-          title: "Input types",
-          summary:
-            "Use email, number, password, date, and others to get better data.",
-          level: "beginner",
-          type: "lesson",
-          body: `The type attribute on <input> tells the browser what kind of data you expect. Different types show different keyboards on mobile and give you built-in validation for free.
-
-Common types: text (default), email, password, number, date, checkbox, radio. Using the right type improves user experience and makes validation easier.
-
-In GAIA, your forms might include numbers (for money, weight, insulin units), dates (for logs), and passwords (for ELEUTHIA or future auth screens).
-
-▶ Try in CodeBin:
-- Extend your previous form: add an input type="number" for "Amount saved" and another type="email" for "Contact email".
-- Notice how the browser behaves differently for numbers and emails (especially on mobile, if you test later).`,
-        },
-        {
-          id: "form-validation",
-          title: "Form validation basics",
-          summary:
-            "Use required, min, max, and pattern for simple validation without JavaScript.",
-          level: "beginner",
-          type: "lesson",
-          body: `HTML gives you built-in validation via attributes like required, min, max, minlength, maxlength, and pattern. When the user submits the form, the browser checks these constraints and blocks submission if they are not met.
-
-This is not a replacement for server-side validation, but it is an excellent first line of defense and improves user feedback.
-
-▶ Try in CodeBin:
-- Mark your "Task title" and "Amount saved" inputs as required.
-- Set a minimum of 0 for "Amount saved" using min="0".
-- Try submitting the form with empty fields and see how the browser highlights the problems.`,
-        },
-      ],
-    },
-    {
-      id: "css-basics",
-      title: "Beginner CSS Concepts",
-      level: "beginner",
-      lessons: [
-        {
-          id: "css-attach",
-          title: "Connecting CSS",
-          summary:
-            "Attach an external stylesheet and understand the cascade.",
-          level: "beginner",
-          type: "lesson",
-          body: `CSS controls how your HTML looks: colors, spacing, fonts, borders, layouts. To use it, you either embed <style> inside the document or, more commonly, link an external stylesheet with <link rel="stylesheet" href="/styles.css">.
-
-The cascade decides which rules win when multiple styles apply. Rules later in the file override earlier ones if they have the same specificity. Understanding this avoids a lot of "why isn't my style working?" moments.
-
-▶ Try in CodeBin:
-- Ensure your <head> includes a <link> to /styles.css.
-- In /styles.css, set a base font-family for the body, and give h1 a different color from h2.
-- Experiment by adding two conflicting rules for h1 and see which one wins based on order.`,
-        },
-        {
-          id: "css-text",
-          title: "Text & colors",
-          summary:
-            "Set font sizes, line-height, and color palette for a simple page.",
-          level: "beginner",
-          type: "lesson",
-          body: `Readable text is more important than fancy visuals. You control readability with font-size, line-height, and contrast between text and background colors.
-
-A good pattern: define a body font-size (like 16px), line-height around 1.5–1.7, and use a limited palette of colors for headings, accents, and backgrounds. Avoid very low contrast (light gray on white, etc.).
-
-▶ Try in CodeBin:
-- In styles.css, set body { font-size: 16px; line-height: 1.6; color: #0f172a; }.
-- Make h1 larger and bolder, and h2 slightly smaller.
-- Change the background color of the whole page to a very light gray and adjust text colors to keep good contrast.`,
-        },
-        {
-          id: "css-box-model",
-          title: "Box model & spacing",
-          summary:
-            "Use margin, padding, and border-box to control how elements occupy space.",
-          level: "beginner",
-          type: "lesson",
-          body: `Every element in CSS is a box with content, padding, border, and margin. Understanding this "box model" is the foundation of layout.
-
-By default, width and height apply to the content box only, and padding/border are added on top. Setting box-sizing: border-box; makes width and height include padding and border, which is often easier to reason about.
-
-▶ Try in CodeBin:
-- In styles.css, add * { box-sizing: border-box; } at the top.
-- Wrap your form in a container div and give that container padding, a border, and margin-top.
-- Observe how margin creates space outside the box, while padding creates space inside.`,
-        },
-      ],
-    },
-    {
-      id: "layout",
-      title: "Layout & Grid",
-      level: "intermediate",
-      lessons: [
-        {
-          id: "flexbox",
-          title: "Flexbox basics",
-          summary:
-            "Lay out navigation bars and card rows with flexbox.",
-          level: "intermediate",
-          type: "lesson",
-          body: `Flexbox is a layout mode that makes it easy to line up items in a row or column and control alignment and spacing. You apply display: flex to a container, then use justify-content, align-items, and gap to arrange children.
-
-GAIA uses flexbox in many places: navigation bars, horizontal lists of cards, button groups.
-
-▶ Try in CodeBin:
-- Create a new <section> called "Quick links" with a container div.
-- Inside, place three <a> elements: Dashboard, Health, Wealth.
-- In styles.css, make the container display: flex, add a gap between items, and center them horizontally.`,
-        },
-        {
-          id: "grid",
-          title: "CSS Grid overview",
-          summary:
-            "Create a simple dashboard layout with two columns.",
-          level: "intermediate",
-          type: "lesson",
-          body: `CSS Grid is a two-dimensional layout system: it can control rows and columns at the same time. You define grid-template-columns and grid-gap (or gap) to create a grid, then place child elements automatically or explicitly.
-
-GAIA dashboards (Wealth, Health, Timeline) are good candidates for grid: panels that line up in a regular pattern.
-
-▶ Try in CodeBin:
-- Add a <section> called "Dashboard panels" with four child <div> elements representing cards.
-- Give the section display: grid and grid-template-columns: repeat(2, minmax(0, 1fr)); and a gap.
-- Style the cards with padding, border, and background color so they look like panels.`,
-        },
-        {
-          id: "layout-project",
-          title: "Mini dashboard project",
-          summary:
-            "Combine HTML structure and CSS layout into a small GAIA-style screen.",
-          level: "intermediate",
-          type: "project",
-          body: `This project ties everything together: semantic HTML, text styling, spacing, and layout.
-
-You will recreate a mini dashboard with:
-- A header containing a title and a short tagline.
-- A navigation bar with a few links.
-- A main area with at least four cards arranged in a grid.
-- A small footer at the bottom.
-
-▶ Try in CodeBin:
-- Start from a clean index.html and styles.css.
-- Build the structure first with semantic elements (header, nav, main, section, footer).
-- Then gradually add CSS until it feels like a tiny GAIA dashboard.`,
-        },
-      ],
-    },
-    {
-      id: "css-intermediate",
-      title: "Intermediate CSS Concepts",
-      level: "intermediate",
-      lessons: [
-        {
-          id: "responsive",
-          title: "Responsive basics",
-          summary:
-            "Use media queries to make layouts adapt to smaller screens.",
-          level: "intermediate",
-          type: "lesson",
-          body: `Responsive design means your layout adapts to different screen sizes. Media queries let you change styles when the viewport width crosses certain thresholds.
-
-For example, you might use a single-column layout on phones and a two-column layout on larger screens. GAIA will eventually need this to look good on both desktop and mobile.
-
-▶ Try in CodeBin:
-- Take your dashboard grid and add a media query that switches to one column when the width is below 640px.
-- Test by resizing the preview frame and watching the layout change.`,
-        },
-        {
-          id: "custom-properties",
-          title: "CSS variables",
-          summary:
-            "Create simple design tokens for colors and spacing.",
-          level: "intermediate",
-          type: "lesson",
-          body: `Custom properties (CSS variables) let you name common values so you can reuse and change them easily. You define them with --token-name and use them with var(--token-name).
-
-For GAIA, this is the first step toward a design system: one place for primary color, background, radius, spacing, etc.
-
-▶ Try in CodeBin:
-- In :root, define variables like --color-bg, --color-accent, and --radius-card.
-- Use those variables for your body background, card background, and card border-radius.
-- Change the values in one place and see the entire page update.`,
-        },
-        {
-          id: "transitions",
-          title: "Transitions & polish",
-          summary:
-            "Add small hover transitions without overwhelming the user.",
-          level: "intermediate",
-          type: "lesson",
-          body: `Transitions let you animate property changes smoothly over time. Simple hover effects on buttons and cards can make the UI feel more responsive and alive.
-
-The key is subtlety: small changes in background-color, transform, or box-shadow, with short durations (150–250ms), are usually enough.
-
-▶ Try in CodeBin:
-- Add a hover state for your cards that slightly changes background color and adds a shadow.
-- Use transition: all 180ms ease-out; to make the change smooth.
-- Keep it gentle; imagine how it would feel to look at this dashboard every day.`,
-        },
-      ],
-    },
-  ],
+    "Use this path as your personal HTML & CSS curriculum inside Apollo. Each lesson card links to a detailed explanation and a live playground. You can edit titles and bodies from the Academy UI and add extra sections for anything you want to track.",
+  sections,
 };
 
 export const concepts: MicroConcept[] = htmlCssPath.sections.flatMap((section) =>

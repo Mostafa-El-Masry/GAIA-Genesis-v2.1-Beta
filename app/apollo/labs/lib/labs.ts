@@ -1,8 +1,8 @@
 "use client";
 
 import { readJSON } from "@/lib/user-storage";
-import { concepts } from "../../apollo/(tabs)/academy/data/academy";
-import type { MicroConcept } from "../../apollo/(tabs)/academy/data/academy";
+import { concepts } from "../../(tabs)/academy/data/academy";
+import type { MicroConcept } from "../../(tabs)/academy/data/academy";
 
 export type BuildEntry = {
   conceptId: string;
