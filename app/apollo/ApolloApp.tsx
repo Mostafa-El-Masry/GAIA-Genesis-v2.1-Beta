@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import ArchiveSidebar from "./components/ArchiveSidebar";
 import SectionEditor from "./components/SectionEditor";
 import SectionViewer from "./components/SectionViewer";
@@ -82,13 +83,17 @@ export default function ApolloPage() {
 
   const handleDeleteActiveSection = useCallback(() => {
     if (!section || !prefs.topicId) return;
-    const ok = window.confirm(`Delete section "${section.heading}"? This cannot be undone.`);
+    const ok = window.confirm(
+      `Delete section "${section.heading}"? This cannot be undone.`
+    );
     if (!ok) return;
     setData((prev) => {
       const next = {
         ...prev,
         topics: prev.topics.map((t) =>
-          t.id === prefs.topicId ? { ...t, sections: t.sections.filter((s) => s.id !== section.id) } : t
+          t.id === prefs.topicId
+            ? { ...t, sections: t.sections.filter((s) => s.id !== section.id) }
+            : t
         ),
       } as typeof prev;
       saveData(next as any);
@@ -122,10 +127,32 @@ export default function ApolloPage() {
     <main className="min-h-screen gaia-surface-soft">
       <div className="mx-auto max-w-7xl space-y-8 px-4 py-8">
         <div className="space-y-6">
-          <div className="border-b gaia-border pb-6">
-            <h1 className="gaia-strong text-5xl sm:text-6xl font-extrabold tracking-tight">APOLLO</h1>
+          <div className="border-b gaia-border pb-6 flex items-center justify-between">
+            <h1 className="gaia-strong text-5xl sm:text-6xl font-extrabold tracking-tight">
+              APOLLO
+            </h1>
+            <div className="flex gap-2">
+              <Link
+                href="/Archives"
+                className="inline-flex items-center justify-center rounded-2xl border gaia-border gaia-surface px-4 py-2 text-sm font-semibold shadow-sm transition hover:shadow focus:outline-none focus:ring-2 focus:ring-black/10"
+              >
+                Archives →
+              </Link>
+              <Link
+                href="/Abollo/Academy"
+                className="inline-flex items-center gap-2 rounded-2xl border-2 border-amber-400/60 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 shadow-sm transition hover:border-amber-500 hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-400"
+              >
+                <svg
+                  className="h-4 w-4"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                </svg>
+                Academy
+              </Link>
+            </div>
           </div>
-
 
           <div className="flex flex-col gap-6">
             <div className={panelClasses}>
@@ -137,27 +164,46 @@ export default function ApolloPage() {
                 <AskPanel onChange={(updated) => setData(updated)} />
               </div>
 
-              <div className={`${panelClasses} ${section ? "flex flex-col gap-4" : ""}`}>
+              <div
+                className={`${panelClasses} ${
+                  section ? "flex flex-col gap-4" : ""
+                }`}
+              >
                 {section ? (
                   <>
                     <div className="flex flex-wrap items-center gap-3">
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.3em] gaia-muted">Active section</p>
-                        <h2 className="gaia-strong text-2xl font-semibold">{section.heading}</h2>
+                        <p className="text-xs font-semibold uppercase tracking-[0.3em] gaia-muted">
+                          Active section
+                        </p>
+                        <h2 className="gaia-strong text-2xl font-semibold">
+                          {section.heading}
+                        </h2>
                       </div>
-                      <div className="text-xs gaia-muted">{new Date(section.editedAt).toLocaleString()}</div>
+                      <div className="text-xs gaia-muted">
+                        {new Date(section.editedAt).toLocaleString()}
+                      </div>
                       <div className="ml-auto">
-                        <button className={subtleButton} onClick={() => setEditing((prev) => !prev)}>
+                        <button
+                          className={subtleButton}
+                          onClick={() => setEditing((prev) => !prev)}
+                        >
                           {editing ? "Close editor" : "Edit"}
                         </button>
-                        <button className={`${subtleButton} ml-2`} onClick={handleDeleteActiveSection}>
+                        <button
+                          className={`${subtleButton} ml-2`}
+                          onClick={handleDeleteActiveSection}
+                        >
                           Delete
                         </button>
                       </div>
                     </div>
 
                     {editing ? (
-                      <SectionEditor section={section} onSave={(text) => handleSave(section, text)} />
+                      <SectionEditor
+                        section={section}
+                        onSave={(text) => handleSave(section, text)}
+                      />
                     ) : (
                       <SectionViewer section={section} />
                     )}
@@ -175,11 +221,7 @@ export default function ApolloPage() {
             </div>
           </div>
         </div>
-
-        
       </div>
     </main>
   );
 }
-
-

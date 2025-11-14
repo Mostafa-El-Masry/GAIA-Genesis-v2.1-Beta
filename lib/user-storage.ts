@@ -119,23 +119,34 @@ async function fetchRows(
     }
   } catch (err) {
     // If proxy fails, fall back to client Supabase call so the app remains functional.
+    const errMsg = err instanceof Error ? err.message : String(err);
     console.warn(
       "user-storage: server proxy fetch failed, falling back to client supabase:",
-      err
+      errMsg
     );
   }
 
-  const result = await supabase
-    .from(STORAGE_TABLE)
-    .select("key,value")
-    .eq("user_id", userId);
-  if (result.error) throw result.error;
-  for (const row of result.data ?? []) {
-    if (!row || typeof row.key !== "string") continue;
-    if (typeof row.value !== "string") continue;
-    map.set(row.key, row.value);
+  try {
+    const result = await supabase
+      .from(STORAGE_TABLE)
+      .select("key,value")
+      .eq("user_id", userId);
+    if (result.error) throw result.error;
+    for (const row of result.data ?? []) {
+      if (!row || typeof row.key !== "string") continue;
+      if (typeof row.value !== "string") continue;
+      map.set(row.key, row.value);
+    }
+    return map;
+  } catch (err) {
+    // If both proxy and direct client call fail, return empty map and let app continue
+    const errMsg = err instanceof Error ? err.message : String(err);
+    console.warn(
+      "user-storage: client supabase call also failed, continuing with empty storage:",
+      errMsg
+    );
+    return map;
   }
-  return map;
 }
 
 function diffAndApply(next: Map<string, string>) {
@@ -239,7 +250,10 @@ export async function hydrateUserStorage(
       ready = true;
       notifyReady();
     } catch (error) {
-      console.error("Unable to hydrate user storage:", error);
+      const errMsg = error instanceof Error ? error.message : String(error);
+      console.error("Unable to hydrate user storage:", errMsg);
+      ready = true;
+      notifyReady();
     } finally {
       hydrating = null;
     }

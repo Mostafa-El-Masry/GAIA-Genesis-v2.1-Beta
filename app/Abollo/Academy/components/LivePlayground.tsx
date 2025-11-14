@@ -146,7 +146,7 @@ export default function LivePlayground({
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-6 text-sm text-slate-400">
+      <div className="rounded-2xl gaia-panel-soft p-6 text-sm gaia-muted">
         Loading playground...
       </div>
     );
@@ -170,8 +170,8 @@ export default function LivePlayground({
           onStatusChange={setStatus}
           previewRef={previewRef}
         />
-        <SandpackLayout className="grid grid-cols-1 gap-4 rounded-2xl border border-white/10 bg-slate-950/40 p-4 lg:grid-cols-2">
-          <div className="flex flex-col rounded-2xl border border-white/10 bg-slate-950/60">
+        <SandpackLayout className="grid grid-cols-1 gap-4 rounded-2xl gaia-panel-soft p-4 lg:grid-cols-2">
+          <div className="flex flex-col rounded-2xl gaia-panel p-0.5 sm:p-1">
             <SandpackCodeEditor
               style={{ minHeight: 320 }}
               showLineNumbers
@@ -183,9 +183,9 @@ export default function LivePlayground({
               <SandpackConsole standalone />
             </div>
           </div>
-          <div className="relative rounded-2xl border border-white/10 bg-slate-950/80">
+          <div className="relative rounded-2xl gaia-panel p-0.5 sm:p-1">
             {isBundling && (
-              <div className="absolute inset-0 z-10 grid place-items-center bg-slate-950/80 text-sm text-slate-200">
+              <div className="absolute inset-0 z-10 grid place-items-center gaia-glass text-sm">
                 Bundling preview...
               </div>
             )}
@@ -299,7 +299,7 @@ function PlaygroundToolbar({
   };
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+    <div className="rounded-2xl gaia-panel-soft p-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap items-center gap-2">
           <label className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
@@ -308,7 +308,7 @@ function PlaygroundToolbar({
           <select
             value={template}
             onChange={(event) => onSwitchTemplate(event.target.value as TemplateKey)}
-            className="rounded-xl border border-white/10 bg-slate-900/60 px-3 py-2 text-sm text-white focus:outline-none"
+            className="gaia-input rounded-xl border px-3 py-2 text-sm focus:outline-none"
           >
             {templateOptions.map((option) => (
               <option key={option.key} value={option.key}>
