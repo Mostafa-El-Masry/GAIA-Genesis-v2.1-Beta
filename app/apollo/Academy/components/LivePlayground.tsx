@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   SandpackCodeEditor,
@@ -13,6 +13,7 @@ import {
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { useEffect, useMemo, useRef, useState } from "react";
+import FileManagerModal from "./FileManagerModal";
 import { loadPlayground, savePlayground } from "../hooks/usePlaygroundStore";
 import { starterMaps, StarterKey } from "../lib/starterMaps";
 
@@ -43,7 +44,9 @@ const defaultFiles = (key: StarterKey): SandpackFiles => {
 };
 
 const buildDownloadName = (lessonId?: string) =>
-  `${lessonId ? lessonId.replace(/\s+/g, "-").toLowerCase() : "playground"}.zip`;
+  `${
+    lessonId ? lessonId.replace(/\s+/g, "-").toLowerCase() : "playground"
+  }.zip`;
 
 export default function LivePlayground({
   lessonId = "default",
@@ -144,6 +147,35 @@ export default function LivePlayground({
     setStatus("Imported project from ZIP");
   };
 
+  const getDefaultContentForPath = (path: string) => {
+    const lower = path.toLowerCase();
+    if (lower.endsWith(".html"))
+      return `<!doctype html>\n<html>\n  <head>\n    <meta charset="utf-8"/>\n    <meta name="viewport" content="width=device-width,initial-scale=1"/>\n    <title>New Page</title>\n  </head>\n  <body>\n    <div id="app">Hello</div>\n  </body>\n</html>`;
+    if (lower.endsWith(".css"))
+      return `/* Styles for ${path} */\nbody { font-family: system-ui, sans-serif; }`;
+    if (lower.endsWith(".ts") || lower.endsWith(".tsx"))
+      return `import React from 'react';\n\nexport default function App() {\n  return <div>Hello from ${path}</div>;\n}`;
+    if (lower.endsWith(".js") || lower.endsWith(".jsx"))
+      return `console.log('Hello from ${path}');`;
+    return `// ${path}\n`;
+  };
+
+  const handleAddFile = () => {
+    const name = window.prompt(
+      "New filename (e.g. /about.html or /src/app.js)"
+    );
+    if (!name) return;
+    const key = name.startsWith("/") ? name : `/${name}`;
+    if (files[key]) {
+      window.alert("A file with that name already exists.");
+      return;
+    }
+    const content = getDefaultContentForPath(key);
+    setFiles((prev) => ({ ...prev, [key]: { code: content } }));
+    setProviderKey((v) => v + 1);
+    setStatus(`Added ${key}`);
+  };
+
   if (loading) {
     return (
       <div className="rounded-2xl gaia-panel-soft p-6 text-sm gaia-muted">
@@ -157,7 +189,11 @@ export default function LivePlayground({
       key={`${currentTemplate}-${providerKey}`}
       template={currentTemplate}
       customSetup={customSetup}
-      options={{ recompileMode: "delayed", recompileDelay: 300, externalResources: [] }}
+      options={{
+        recompileMode: "delayed",
+        recompileDelay: 300,
+        externalResources: [],
+      }}
     >
       <div className="space-y-4">
         <PlaygroundToolbar
@@ -166,20 +202,23 @@ export default function LivePlayground({
           onSwitchTemplate={handleSwitchTemplate}
           onReset={handleReset}
           onImport={handleImport}
+          files={files}
+          setFiles={setFiles}
+          setProviderKey={setProviderKey}
           status={status}
           onStatusChange={setStatus}
           previewRef={previewRef}
         />
-        <SandpackLayout className="grid grid-cols-1 gap-4 rounded-2xl gaia-panel-soft p-4 lg:grid-cols-2">
+        <SandpackLayout className="grid grid-cols-1 gap-4 rounded-2xl gaia-panel-soft p-4 lg:[grid-template-columns:1fr_2fr]">
           <div className="flex flex-col rounded-2xl gaia-panel p-0.5 sm:p-1">
             <SandpackCodeEditor
-              style={{ minHeight: 320 }}
+              style={{ minHeight: 360 }}
               showLineNumbers
               showTabs
               wrapContent
               closableTabs
             />
-            <div className="max-h-52 overflow-auto border-t border-white/10">
+            <div className="max-h-80 overflow-auto border-t border-white/10 text-base-content">
               <SandpackConsole standalone />
             </div>
           </div>
@@ -193,7 +232,7 @@ export default function LivePlayground({
               ref={previewRef}
               showOpenInCodeSandbox={false}
               showNavigator
-              className="min-h-[560px]"
+              className="min-h-[720px]"
             />
           </div>
         </SandpackLayout>
@@ -208,6 +247,9 @@ type ToolbarProps = {
   onSwitchTemplate: (template: TemplateKey) => void;
   onReset: () => void;
   onImport: (files: SandpackFiles) => void;
+  files?: SandpackFiles;
+  setFiles?: (files: SandpackFiles) => void;
+  setProviderKey?: (updater: number | ((v: number) => number)) => void;
   status: string;
   onStatusChange?: (text: string) => void;
   previewRef: React.RefObject<SandpackPreviewRef | null>;
@@ -219,11 +261,16 @@ function PlaygroundToolbar({
   onSwitchTemplate,
   onReset,
   onImport,
+  // onAddFile removed: toolbar will manage files directly via props
+  files,
+  setFiles,
+  setProviderKey,
   status,
   onStatusChange,
   previewRef,
 }: ToolbarProps) {
   const { sandpack } = useSandpack();
+  const [filesOpen, setFilesOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -262,7 +309,9 @@ function PlaygroundToolbar({
     fileInputRef.current?.click();
   };
 
-  const handleImportFiles = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImportFiles = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
@@ -290,7 +339,8 @@ function PlaygroundToolbar({
       onStatusChange?.("Preview opened in new tab");
       return;
     }
-    const html = sandpack.files["/index.html"]?.code ?? "<h1>Preview unavailable</h1>";
+    const html =
+      sandpack.files["/index.html"]?.code ?? "<h1>Preview unavailable</h1>";
     const blob = new Blob([html], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     window.open(url, "_blank", "noopener,noreferrer");
@@ -302,12 +352,14 @@ function PlaygroundToolbar({
     <div className="rounded-2xl gaia-panel-soft p-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap items-center gap-2">
-          <label className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+          <label className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-600 dark:text-white/80">
             Template
           </label>
           <select
             value={template}
-            onChange={(event) => onSwitchTemplate(event.target.value as TemplateKey)}
+            onChange={(event) =>
+              onSwitchTemplate(event.target.value as TemplateKey)
+            }
             className="gaia-input rounded-xl border px-3 py-2 text-sm focus:outline-none"
           >
             {templateOptions.map((option) => (
@@ -319,56 +371,79 @@ function PlaygroundToolbar({
           <button
             type="button"
             onClick={onReset}
-            className="rounded-xl border border-white/10 px-3 py-2 text-sm text-white/80 transition hover:border-white/50"
+            className="rounded-xl border border-white/10 px-3 py-2 text-sm text-slate-700 dark:text-white/80 transition hover:border-white/50"
           >
             Reset starter
           </button>
+          <button
+            type="button"
+            onClick={() => setFilesOpen(true)}
+            className="rounded-xl border border-white/10 px-3 py-2 text-sm text-slate-700 dark:text-white/80 hover:border-white/40"
+          >
+            Files
+          </button>
         </div>
+
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={handleRun}
-            className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-100 hover:border-emerald-400"
+            className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-100 hover:border-emerald-400"
           >
             Run
           </button>
           <button
             type="button"
             onClick={handleSave}
-            className="rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-sm text-white hover:border-white/40"
+            className="rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-sm text-slate-700 dark:text-white hover:border-white/40"
           >
             {isSaving ? "Saving..." : "Save"}
           </button>
           <button
             type="button"
             onClick={handleExport}
-            className="rounded-xl border border-white/10 px-3 py-2 text-sm text-white/80 hover:border-white/40"
+            className="rounded-xl border border-white/10 px-3 py-2 text-sm text-slate-700 dark:text-white/80 hover:border-white/40"
           >
             {isExporting ? "Exporting..." : "Export ZIP"}
           </button>
           <button
             type="button"
             onClick={handleImportClick}
-            className="rounded-xl border border-white/10 px-3 py-2 text-sm text-white/80 hover:border-white/40"
+            className="rounded-xl border border-white/10 px-3 py-2 text-sm text-slate-700 dark:text-white/80 hover:border-white/40"
           >
             Import ZIP
           </button>
           <button
             type="button"
             onClick={handleOpenPreview}
-            className="rounded-xl border border-white/10 px-3 py-2 text-sm text-white/80 hover:border-white/40"
+            className="rounded-xl border border-white/10 px-3 py-2 text-sm text-slate-700 dark:text-white/80 hover:border-white/40"
           >
             Open preview
           </button>
         </div>
       </div>
-      {status && <p className="mt-3 text-xs text-slate-400">{status}</p>}
+
+      {status && (
+        <p className="mt-3 text-xs text-slate-600 dark:text-white/70">
+          {status}
+        </p>
+      )}
+
       <input
         ref={fileInputRef}
         type="file"
         accept=".zip"
         className="hidden"
         onChange={handleImportFiles}
+      />
+
+      <FileManagerModal
+        isOpen={filesOpen}
+        onClose={() => setFilesOpen(false)}
+        files={files}
+        sandpack={sandpack}
+        setFiles={setFiles}
+        onStatusChange={onStatusChange}
       />
     </div>
   );
@@ -387,5 +462,7 @@ function cloneFiles(source: SandpackFiles): SandpackFiles {
 
 function defaultFilesForStored(source: SandpackFiles): SandpackFiles {
   const sanitized = cloneFiles(source);
-  return Object.keys(sanitized).length > 0 ? sanitized : defaultFiles("vanilla");
+  return Object.keys(sanitized).length > 0
+    ? sanitized
+    : defaultFiles("vanilla");
 }

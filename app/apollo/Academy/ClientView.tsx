@@ -2,7 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import LivePlayground from "./components/LivePlayground";
-import { htmlCssPath, type Section, type Lesson } from "@/app/apollo/(tabs)/academy/data/academy";
+import {
+  htmlCssPath,
+  type Section,
+  type Lesson,
+} from "@/app/apollo/(tabs)/academy/data/academy";
 
 type SelectedLesson = {
   sectionId: string;
@@ -171,9 +175,7 @@ export default function ClientView() {
 
   const currentIndex = useMemo(() => {
     if (!current) return -1;
-    return current.section.lessons.findIndex(
-      (l) => l.id === current.lesson.id
-    );
+    return current.section.lessons.findIndex((l) => l.id === current.lesson.id);
   }, [current]);
 
   const prevLesson =
@@ -743,8 +745,8 @@ export default function ClientView() {
                 {isEditingLesson ? (
                   <div className="space-y-3 rounded-2xl gaia-panel-soft p-3 sm:p-4">
                     <p className="text-xs gaia-muted">
-                      You are editing this lesson. Changes are stored locally
-                      in your browser.
+                      You are editing this lesson. Changes are stored locally in
+                      your browser.
                     </p>
                     <div className="space-y-1">
                       <label className="text-[0.7rem] font-semibold uppercase tracking-[0.25em] gaia-muted">
@@ -791,8 +793,8 @@ export default function ClientView() {
                 ) : (
                   <div className="space-y-3 text-sm gaia-muted">
                     <p>
-                      This lesson doesn&apos;t have detailed content yet.
-                      Use &quot;Edit title &amp; text&quot; to write your own
+                      This lesson doesn&apos;t have detailed content yet. Use
+                      &quot;Edit title &amp; text&quot; to write your own
                       explanation, or paste notes from your study material.
                     </p>
                   </div>
@@ -810,20 +812,28 @@ export default function ClientView() {
           </div>
         </section>
 
-        {/* Live playground below lesson, full width */}
-        <section className="space-y-3 rounded-3xl gaia-panel-soft p-4 sm:p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-primary">
-            Live playground
-          </p>
-          <h2 className="text-lg sm:text-xl font-semibold gaia-strong">
-            CodeBin — try what you just learned
-          </h2>
-          <p className="text-xs sm:text-sm gaia-muted max-w-3xl">
-            Use the file tabs to add more pages or create extra files for
-            experiments. Type the examples from the lesson above, or follow any
-            checklist you add to the body and see the result live.
-          </p>
-          <div className="mt-2 rounded-2xl gaia-panel-soft p-1 sm:p-2">
+        {/* Live playground below lesson, full width (restyled) */}
+        <section className="w-full mx-auto max-w-7xl rounded-3xl gaia-panel-soft p-6">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div className="flex-1">
+              <span className="inline-block text-xs font-semibold uppercase tracking-wider bg-primary/10 text-primary px-3 py-1 rounded-full">
+                Live playground
+              </span>
+              <h2 className="mt-3 text-2xl sm:text-3xl font-semibold gaia-strong">
+                CodeBin — try what you just learned
+              </h2>
+              <p className="mt-2 text-sm gaia-muted max-w-3xl">
+                Use the file tabs to add more pages or create extra files for
+                experiments. Type the examples from the lesson above, or follow
+                any checklist you add to the body and see the result live.
+              </p>
+            </div>
+            <div className="hidden sm:flex items-center gap-2">
+              {/* Reserved for future toolbar / actions (expand preview, presets) */}
+            </div>
+          </div>
+
+          <div className="mt-6 -mx-4 sm:-mx-6 rounded-2xl gaia-panel p-4 sm:p-6 px-4 sm:px-6">
             <LivePlayground
               lessonId="academy-html-css"
               template="vanilla"

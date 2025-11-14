@@ -1,4 +1,77 @@
 export type LessonLevel = "beginner" | "intermediate" | "advanced";
+export type Lesson = {
+  id: string;
+  title: string;
+  summary: string;
+  level: LessonLevel;
+  type?: "project" | "lesson";
+  body: string;
+};
+export type Section = {
+  id: string;
+  title: string;
+  level: LessonLevel;
+  lessons: Lesson[];
+};
+export type LearningPath = {
+  id: string;
+  title: string;
+  overview: string;
+  description: string;
+  sections: Section[];
+};
+export type MicroConcept = {
+  id: string;
+  nodeId: string;
+  trackId: string;
+  trackTitle: string;
+  title: string;
+  lesson: string;
+};
+/**
+ * HTML & CSS curriculum (compact). Bodies are left empty to keep this file
+ * syntactically simple — the Academy UI can populate lesson bodies.
+ */
+const sections: Section[] = [
+  {
+  id: "html-css-m1",
+  title: "HTML Foundations",
+  level: "beginner",
+  lessons: [
+  { id: "html-css-m1-l1", title: "HTML, CSS & JavaScript overview", summary: "How HTML, CSS, and JavaScript work together to build a page.", level: "beginner", type: "lesson", body: "" },
+  { id: "html-css-m1-l2", title: "Elements and tags", summary: "Understanding elements, tags, and how they form a DOM tree.", level: "beginner", type: "lesson", body: "" },
+  { id: "html-css-m1-l3", title: "HTML boilerplate & document structure", summary: "The minimum HTML needed for a valid document, and how it is structured.", level: "beginner", type: "lesson", body: "" },
+  ],
+  },
+  {
+  id: "html-css-m2",
+  title: "Semantic HTML & Accessibility Basics",
+  level: "beginner",
+  lessons: [
+  { id: "html-css-m2-l1", title: "Introduction to web accessibility", summary: "Why accessibility matters and who benefits from it.", level: "beginner", type: "lesson", body: "" },
+  ],
+  },
+];
+export const htmlCssPath: LearningPath = {
+  id: "foundations-html-css",
+  title: "Foundations: HTML & CSS",
+  overview:
+  "A step-by-step path through semantic HTML and modern CSS, from the very basics up to responsive design and animations.",
+  description:
+  "Use this path as your personal HTML & CSS curriculum inside Apollo. Each lesson card links to a detailed explanation and a live playground. You can edit titles and bodies from the Academy UI and add extra sections for anything you want to track.",
+  sections,
+};
+export const concepts: MicroConcept[] = htmlCssPath.sections.flatMap((section) =>
+  section.lessons.map((lesson) => ({
+  id: `${section.id}-${lesson.id}`,
+  nodeId: `${section.id}-${lesson.id}`,
+  trackId: section.id,
+  trackTitle: section.title,
+  title: lesson.title,
+  lesson: lesson.summary,
+  }))
+);
+export type LessonLevel = "beginner" | "intermediate" | "advanced";
 
 export type Lesson = {
   id: string;
@@ -34,8 +107,8 @@ export type MicroConcept = {
 };
 
 /**
- * HTML & CSS curriculum skeleton inspired by The Odin Project,
- * but with original wording and empty bodies so you can fill them.
+ * HTML & CSS curriculum (compact). Bodies are left empty to keep this file
+ * syntactically simple — the Academy UI can populate lesson bodies.
  */
 
 const sections: Section[] = [
@@ -44,13 +117,50 @@ const sections: Section[] = [
     title: "HTML Foundations",
     level: "beginner",
     lessons: [
-      {
-        id: "html-css-m1-l1",
-        title: "HTML, CSS & JavaScript overview",
-        summary: "How HTML, CSS, and JavaScript work together to build a page.",
-        level: "beginner",
-        type: "lesson",
-        body: "",
+      { id: "html-css-m1-l1", title: "HTML, CSS & JavaScript overview", summary: "How HTML, CSS, and JavaScript work together to build a page.", level: "beginner", type: "lesson", body: "" },
+      { id: "html-css-m1-l2", title: "Elements and tags", summary: "Understanding elements, tags, and how they form a DOM tree.", level: "beginner", type: "lesson", body: "" },
+      { id: "html-css-m1-l3", title: "HTML boilerplate & document structure", summary: "The minimum HTML needed for a valid document, and how it is structured.", level: "beginner", type: "lesson", body: "" },
+    ],
+  },
+  {
+    id: "html-css-m2",
+    title: "Semantic HTML & Accessibility Basics",
+    level: "beginner",
+    lessons: [
+      { id: "html-css-m2-l1", title: "Introduction to web accessibility", summary: "Why accessibility matters and who benefits from it.", level: "beginner", type: "lesson", body: "" },
+    ],
+  },
+];
+Example (structure + style + behaviour):
+
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Mini page</title>
+    <style>body{font-family:system-ui;padding:1rem} .hidden{display:none}</style>
+  </head>
+  <body>
+    <h1>Hello</h1>
+    <p id="msg">Count: 0</p>
+    <button id="inc">Increase</button>
+    <script>
+      let n = 0; document.getElementById('inc').onclick = () => {
+        n++; document.getElementById('msg').textContent = 'Count: ' + n;
+      };
+    </script>
+  </body>
+</html>
+
+▶ Try in CodeBin:
+- Paste the example above into CodeBin and press Run.
+- Change the CSS rule to use a different font-size and observe the result.
+- Modify the button handler to decrease the count instead of increasing it.
+
+Further reading:
+- MDN: https://developer.mozilla.org/en-US/docs/Learn/Getting_started_with_the_web/HTML_basics
+- The Odin Project: https://www.theodinproject.com/paths/foundations/courses/foundations
+`,
       },
       {
         id: "html-css-m1-l2",
@@ -58,7 +168,31 @@ const sections: Section[] = [
         summary: "Understanding elements, tags, and how they form a DOM tree.",
         level: "beginner",
         type: "lesson",
-        body: "",
+        body: `HTML is expressed with elements. An element has a start tag, content (which may include other elements) and an end tag. Elements nest to form the DOM (Document Object Model).
+
+Example:
+
+<article>
+  <h2>My title</h2>
+  <p>This is a <strong>paragraph</strong> with an <a href="#">inline link</a>.</p>
+  <ul>
+    <li>First</li>
+    <li>Second</li>
+  </ul>
+</article>
+
+Key ideas:
+- Tags: the textual markers (e.g. '<p>', '<h1>') that define elements.
+- Elements: the nodes in the document tree, each providing semantic meaning.
+- Attributes: extra information on elements (e.g. 'href', 'src', 'alt').
+
+▶ Try in CodeBin:
+- Create a nested list and then wrap it in a `<nav>` element to represent navigation.
+- Inspect the generated DOM in DevTools and find the `<strong>` element.
+
+Further reading:
+- MDN: https://developer.mozilla.org/en-US/docs/Web/HTML/Element
+- The Odin Project (HTML module): https://www.theodinproject.com/paths/foundations/courses/foundations/lessons/intro-to-html
       },
       {
         id: "html-css-m1-l3",
@@ -186,6 +320,7 @@ const sections: Section[] = [
     title: "Text, Lists & Navigation",
     level: "beginner",
     lessons: [
+      
       {
         id: "html-css-m3-l1",
         title: "Headings and paragraphs in depth",
@@ -336,7 +471,28 @@ const sections: Section[] = [
     level: "intermediate",
     lessons: [
       {
-        id: "html-css-m6-l1",
+    body: `Attributes add extra data to elements. Some are specific (e.g. src on <img>), while others are global and apply to any element.
+
+  Common patterns:
+  - 'id' — unique identifier for an element; useful for JavaScript and CSS targeting.
+  - 'class' — one or more space-separated tokens applied for styling and selection.
+  - 'data-*' — custom data attributes for storing application data without affecting semantics.
+  - 'role' / 'aria-*' — accessibility attributes that communicate intent to assistive tech.
+
+  Example:
+
+  <button id="save" class="btn primary" data-step="1">Save</button>
+
+  Global defaults and inheritance:
+  - Some properties inherit from parents (e.g. color, font-family) while others do not (e.g. margin).
+  - Use CSS ':root' or on body to set global design tokens (font-size, colours).
+
+  ▶ Try in CodeBin:
+  - Add data-test="x" to an element and read it in the console: 'document.querySelector("[data-test]").dataset.test'.
+  - Try changing a parent font-size and observe inherited text sizes.
+
+  Further reading:
+  - MDN attributes overview: https://developer.mozilla.org/en-US/docs/Learn/HTML/Howto/Use_data_attributes
         title: "The box model in practice",
         summary: "Content, padding, border, margin, and box-sizing.",
         level: "intermediate",
@@ -375,7 +531,23 @@ const sections: Section[] = [
     level: "intermediate",
     lessons: [
       {
-        id: "html-css-m7-l1",
+    body: `Emmet is a shorthand syntax supported by many editors that expands into full HTML/CSS. It saves keystrokes for common patterns.
+
+  Examples:
+  - 'html:5' → expands to a full HTML5 boilerplate.
+  - 'ul>li*5' → creates a `<ul>` with five `<li>` children.
+  - 'header>nav>ul>li*3>a' → helpful for quick nav scaffolding.
+
+  Tips:
+  - Learn the basic abbreviations you use often (html, div, a, img, ul/li).
+  - Combine with editor snippets to prefill classes or attributes your project uses.
+
+  ▶ Try in CodeBin:
+  - In an editor supporting Emmet (VS Code, for example), type 'html:5' and expand it.
+  - Create a nav using 'nav>ul>li*4>a' and edit the links.
+
+  Further reading:
+  - Emmet docs: https://emmet.io/
         title: "Flexbox: main axis and cross axis",
         summary: "Understanding how flex containers arrange their children.",
         level: "intermediate",
@@ -422,7 +594,25 @@ const sections: Section[] = [
     level: "intermediate",
     lessons: [
       {
-        id: "html-css-m8-l1",
+    body: `Project brief — Recipe page
+
+  Create a simple recipe page that includes:
+  - A page title and a short description.
+  - An ingredients list (use <ul> or <ol>).
+  - Preparation steps as an ordered list.
+  - At least one image with proper alt text.
+
+  Stretch goals:
+  - Add a two-column layout using CSS (ingredients on the left, steps on the right).
+  - Add a link to a printable view (simple CSS print stylesheet).
+
+  ▶ Try in CodeBin:
+  - Build the page in /index.html with a separate /styles.css file and run the preview.
+  - Share the finished page by exporting ZIP or copying the HTML into the playground.
+
+  Further reading & examples:
+  - MDN HTML basics: https://developer.mozilla.org/en-US/docs/Learn/Getting_started_with_the_web/HTML_basics
+  - The Odin Project example exercises: https://www.theodinproject.com/paths/foundations/courses/foundations
         title: "Introduction to CSS Grid",
         summary: "Defining rows and columns with CSS Grid.",
         level: "intermediate",
