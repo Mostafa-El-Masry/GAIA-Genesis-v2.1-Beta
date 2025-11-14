@@ -4,6 +4,18 @@
 import { useMemo } from "react";
 import { useTodoDaily } from "../dashboard/hooks/useTodoDaily";
 
+const LABELS: Record<string, string> = {
+  life: "Life",
+  work: "Work",
+  distraction: "Distraction",
+};
+
+const HINTS: Record<string, string> = {
+  life: "Use this for home, errands, relationships, errands, and anything that keeps your life moving.",
+  work: "Tasks related to your job, GAIA building, study sessions, and deep work blocks.",
+  distraction: "Things you want to deliberately enjoy or limit: games, scrolling, and time sinks.",
+};
+
 export default function TODOPage() {
   const { tasks, deleteTask } = useTodoDaily();
 
@@ -15,46 +27,49 @@ export default function TODOPage() {
 
   return (
     <main className="mx-auto max-w-4xl p-4">
-      <h1 className="mb-6 text-2xl font-bold">TODO · All Tasks</h1>
+      <header className="mb-6 space-y-1">
+        <h1 className="text-2xl font-bold">TODO · All Tasks</h1>
+        <p className="max-w-2xl text-sm text-base-content/70">
+          This is the full list backing the dashboard&apos;s &quot;Today&apos;s Focus&quot; panel.
+          Tasks are grouped by Life, Work, and Distraction so you can see everything in one place.
+        </p>
+      </header>
 
       {(["life", "work", "distraction"] as const).map((cat) => (
         <section key={cat} className="mb-8">
-          <h2 className="mb-2 text-lg font-semibold capitalize">{cat}</h2>
-          <div className="rounded-xl border border-base-300">
+          <header className="mb-2 flex items-baseline justify-between">
+            <h2 className="text-lg font-semibold">{LABELS[cat]}</h2>
+            <p className="text-xs text-base-content/60">{HINTS[cat]}</p>
+          </header>
+          <div className="rounded-xl border border-base-300 bg-base-100/60">
             {byCat[cat].length === 0 ? (
-              <div className="p-4 text-sm opacity-60">No tasks yet.</div>
+              <div className="space-y-1 p-4 text-sm text-base-content/60">
+                <p>No tasks in this category yet.</p>
+                <p>
+                  Add one from the dashboard&apos;s &quot;Today&apos;s Focus&quot; cards using Quick Add,
+                  or schedule tasks there and they will appear here automatically.
+                </p>
+              </div>
             ) : (
               <ul className="divide-y divide-base-300">
                 {byCat[cat].map((t) => (
                   <li key={t.id} className="p-3">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-3">
                       <div className="flex-1">
                         <div className="font-medium">{t.title}</div>
                         {t.note && (
-                          <div className="text-sm opacity-70">{t.note}</div>
+                          <p className="text-sm text-base-content/70">{t.note}</p>
+                        )}
+                        {t.repeat_rule && t.repeat_rule !== "none" && (
+                          <p className="mt-1 text-xs uppercase tracking-wide text-base-content/60">
+                            Repeats: {String(t.repeat_rule)}
+                          </p>
                         )}
                       </div>
                       <div className="flex items-center gap-2">
-                        {t.pinned && (
-                          <span className="badge badge-primary badge-outline">
-                            Pinned
-                          </span>
-                        )}
-                        <span className="badge badge-outline">
-                          P{t.priority}
-                        </span>
-                        {t.due_date && (
-                          <span className="badge badge-ghost">
-                            Due {t.due_date}
-                          </span>
-                        )}
                         <button
-                          onClick={() => {
-                            if (confirm(`Delete task "${t.title}"?`)) {
-                              deleteTask(t.id);
-                            }
-                          }}
-                          className="btn btn-ghost btn-xs text-error hover:bg-error/20"
+                          className="rounded-lg border border-base-300 px-2 py-1 text-xs text-base-content/70 hover:bg-base-200"
+                          onClick={() => deleteTask(t.id)}
                           title="Delete task"
                         >
                           ✕
