@@ -10,6 +10,7 @@ import {
 } from "./prefs";
 import { getDisplayName } from "./utils";
 import { getGalleryImageUrl } from "./imageUrl";
+import { getPreviewSources } from "./previews";
 
 const AUTOPLAY_DELAY_MS = 10000;
 const AUTOPLAY_TICK_MS = 100;
@@ -547,9 +548,9 @@ export default function Lightbox({
               </div>
               <div className="lb-recommendations__options">
                 {suggestions.map(({ entry, idx }) => {
-                  const thumbKey =
-                    entry.preview?.[0] ?? "/media/video-placeholder.jpg";
-                  const thumbSrc = getGalleryImageUrl(thumbKey);
+                  const thumbSrc =
+                    getPreviewSources(entry)[0] ??
+                    getGalleryImageUrl("/media/video-placeholder.jpg");
                   const label = getDisplayName(entry.src, entry.id);
                   return (
                     <button

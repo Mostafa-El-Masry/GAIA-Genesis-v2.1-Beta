@@ -1,7 +1,7 @@
 "use client";
 import NextImage from "next/image";
 import type { MouseEvent as ReactMouseEvent } from "react";
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { GalleryItem } from "./types";
 import { getFavorites, getWatchTimeMap, setFavorite } from "./prefs";
 import { formatDuration } from "./metrics";
@@ -13,7 +13,8 @@ import {
   PlayBadgeGlyph,
 } from "./icons";
 import { getDisplayName } from "./utils";
-import { getGalleryImageUrl, getPreviewImageUrl } from "./imageUrl";
+import { getGalleryImageUrl } from "./imageUrl";
+import { getPreviewSources } from "./previews";
 
 // EditableTitle: small inline editor for item title. Shows title and an edit button.
 function EditableTitle({
@@ -83,6 +84,8 @@ function EditableTitle({
 }
 
 const PAGE_SIZE = 20;
+const PREVIEW_START_DELAY_MS = 250;
+const PREVIEW_FRAME_DELAY_MS = 500;
 
 export default function Grid({
   items,
@@ -265,13 +268,14 @@ function GalleryCard({
 }) {
   const cardRef = useRef<HTMLElement>(null);
   const imageCover = getGalleryImageUrl(item.src);
-  const previewCover = item.preview?.[0]
-    ? getGalleryImageUrl(item.preview[0])
-    : undefined;
+  const previewSources = useMemo(
+    () => (item.type === "video" ? getPreviewSources(item) : []),
+    [item]
+  );
   const baseCover =
     item.type === "image"
       ? imageCover
-      : previewCover ?? "/media/video-placeholder.jpg";
+      : previewSources[0] ?? "/media/video-placeholder.jpg";
   const cover = baseCover;
   const fallbackRatio = item.type === "video" ? 16 / 9 : undefined;
   const aspect = useAspect(cover, fallbackRatio);
@@ -415,7 +419,7 @@ function GalleryCard({
         {item.type === "image" ? (
           <img src={cover} alt="" className="card-media" loading="lazy" />
         ) : (
-          <VideoThumb it={item} cover={cover} />
+          <VideoThumb cover={cover} previews={previewSources} />
         )}
         <div className="card-overlay">
           <div className="card-overlay__row card-overlay__row--top">
@@ -560,112 +564,92 @@ function GalleryCard({
   );
 }
 
-function VideoThumb({ it, cover }: { it: GalleryItem; cover: string }) {
+function VideoThumb({
+  cover,
+  previews,
+}: {
+  cover: string;
+  previews: string[];
+}) {
   const [frame, setFrame] = useState(0);
-  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const previews = it.preview || [];
   const ref = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const [previewFailed, setPreviewFailed] = useState(false);
-  const previewSources = useMemo(
-    () =>
-      previews
-        .map((src) => src?.trim())
-        .filter((src): src is string => Boolean(src))
-        .map((src) => getPreviewImageUrl(src)),
-    [previews]
-  );
+  const rotationTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const previewSources = previews;
   const hasPreviews = previewSources.length > 0;
   const previewAvailable = hasPreviews && !previewFailed;
 
   useEffect(() => {
     setPreviewFailed(false);
+    setFrame(0);
   }, [previewSources]);
-
-  useEffect(() => {
-    if (!previewAvailable) return;
-    let i = 0;
-    const onEnter = () => {
-      timer.current = setInterval(() => {
-        i = (i + 1) % previewSources.length;
-        setFrame(i);
-      }, 1200);
-    };
-    const onLeave = () => {
-      if (timer.current) clearInterval(timer.current);
-      timer.current = null;
-      setFrame(0);
-    };
-    const el = ref.current;
-    if (!el) return;
-    el.addEventListener("mouseenter", onEnter);
-    el.addEventListener("mouseleave", onLeave);
-    return () => {
-      el.removeEventListener("mouseenter", onEnter);
-      el.removeEventListener("mouseleave", onLeave);
-      if (timer.current) clearInterval(timer.current);
-    };
-  }, [previewAvailable, previewSources.length]);
 
   useEffect(() => {
     if (!previewAvailable) {
       setFrame(0);
       return;
     }
-    setFrame((prev) =>
-      prev >= previewSources.length ? 0 : Math.max(prev, 0)
-    );
-  }, [previewAvailable, previewSources.length]);
 
-  const handleVideoEnter = useCallback(() => {
-    if (previewAvailable) return;
-    const el = videoRef.current;
+    const el = ref.current;
     if (!el) return;
-    void el.play().catch(() => {
-      /* ignore autoplay restrictions */
-    });
-  }, [previewAvailable]);
 
-  const handleVideoLeave = useCallback(() => {
-    if (previewAvailable) return;
-    const el = videoRef.current;
-    if (!el) return;
-    el.pause();
-    el.currentTime = 0;
+    const startRotation = () => {
+      if (rotationTimer.current) clearInterval(rotationTimer.current);
+      rotationTimer.current = setInterval(() => {
+        setFrame((prev) => (prev + 1) % previewSources.length);
+      }, PREVIEW_FRAME_DELAY_MS);
+    };
+
+    const clearTimers = () => {
+      if (hoverTimer.current) clearTimeout(hoverTimer.current);
+      if (rotationTimer.current) clearInterval(rotationTimer.current);
+      hoverTimer.current = null;
+      rotationTimer.current = null;
+    };
+
+    const onEnter = () => {
+      clearTimers();
+      hoverTimer.current = setTimeout(
+        startRotation,
+        PREVIEW_START_DELAY_MS
+      );
+    };
+
+    const onLeave = () => {
+      clearTimers();
+      setFrame(0);
+    };
+
+    el.addEventListener("mouseenter", onEnter);
+    el.addEventListener("mouseleave", onLeave);
+    return () => {
+      el.removeEventListener("mouseenter", onEnter);
+      el.removeEventListener("mouseleave", onLeave);
+      clearTimers();
+    };
+  }, [previewAvailable, previewSources]);
+
+  useEffect(() => {
+    if (!previewAvailable) {
+      setFrame(0);
+    }
   }, [previewAvailable]);
 
   const activePreviewSrc = previewAvailable
     ? previewSources[frame] ?? previewSources[0]
-    : undefined;
+    : cover;
 
   return (
-    <div
-      ref={ref}
-      className="video-thumb relative"
-      onMouseEnter={handleVideoEnter}
-      onMouseLeave={handleVideoLeave}
-    >
-      {previewAvailable ? (
-        <NextImage
-          src={activePreviewSrc ?? ""}
-          alt="Preview"
-          width={400}
-          height={300}
-          className="card-media rounded-xl object-cover"
-          onError={() => setPreviewFailed(true)}
-        />
-      ) : (
-        <video
-          ref={videoRef}
-          className="card-media"
-          src={getGalleryImageUrl(it.src)}
-          poster={cover}
-          muted
-          loop
-          playsInline
-          preload="metadata"
-        />
-      )}
+    <div ref={ref} className="video-thumb relative">
+      <NextImage
+        src={activePreviewSrc ?? cover}
+        alt="Preview"
+        width={400}
+        height={300}
+        className="card-media rounded-xl object-cover"
+        onError={() => setPreviewFailed(true)}
+      />
       <span className="video-badge" aria-hidden>
         <PlayBadgeGlyph className="video-badge__icon" />
       </span>

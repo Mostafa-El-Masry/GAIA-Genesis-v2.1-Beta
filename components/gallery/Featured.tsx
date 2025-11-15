@@ -6,6 +6,7 @@ import { getWatchTimeMap } from "./prefs";
 import { formatDuration } from "./metrics";
 import { getDisplayName } from "./utils";
 import { getProxiedImageUrl } from "./imageUrl";
+import { getPreviewSources } from "./previews";
 
 function pickRandom<T extends GalleryItem>(
   arr: T[],
@@ -39,48 +40,35 @@ function FeaturedTile({
 
   const isVideo = type === "video";
   const placeholder = "/media/video-placeholder.jpg";
-  const previewList = useMemo(() => {
-    if (!isVideo || !Array.isArray(item.preview)) return [];
-    return item.preview
-      .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
-      .filter(Boolean);
-  }, [isVideo, item.preview]);
+  const previewFrames = useMemo(
+    () => (isVideo ? getPreviewSources(item) : []),
+    [isVideo, item]
+  );
   const [frame, setFrame] = useState(0);
   const [previewFailed, setPreviewFailed] = useState(false);
   const hasPreview =
-    isVideo && previewList.length > 0 && !previewFailed;
-  const effectivePreview =
-    hasPreview && previewList.length > 0
-      ? previewList[frame] ?? previewList[0]
-      : null;
-  const src = useMemo(() => {
-    if (!isVideo) return item.src;
-    const fallback = item.preview?.[0] ?? item.src;
-    return effectivePreview ?? fallback;
-  }, [effectivePreview, isVideo, item.preview, item.src]);
+    isVideo && previewFrames.length > 0 && !previewFailed;
+  const placeholderSrc = getProxiedImageUrl(placeholder);
+  const src = !isVideo
+    ? getProxiedImageUrl(item.src)
+    : previewFailed
+      ? placeholderSrc
+      : hasPreview
+        ? previewFrames[frame] ??
+          previewFrames[0] ??
+          placeholderSrc
+        : previewFrames[0] ?? placeholderSrc;
   const duration = formatDuration(item.duration);
   const watchLabel = formatDuration(Math.max(0, watchSeconds || 0)) ?? "0:00";
-  const videoRef = useRef<HTMLVideoElement>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const hasManagement = Boolean(onRename || onEditTags);
 
   useEffect(() => {
-    if (!isVideo || hasPreview) return;
-    const node = videoRef.current;
-    if (!node) return;
-    const play = () => {
-      void node.play().catch(() => {
-        /* ignore autoplay restrictions */
-      });
-    };
-    play();
-    return () => {
-      node.pause();
-      node.currentTime = 0;
-    };
-  }, [hasPreview, isVideo, item.src]);
+    setPreviewFailed(false);
+    setFrame(0);
+  }, [previewFrames]);
 
   useEffect(() => {
     if (!hasPreview) {
@@ -92,7 +80,7 @@ function FeaturedTile({
       intervalRef.current = null;
     }
     intervalRef.current = setInterval(() => {
-      setFrame((prev) => (prev + 1) % previewList.length);
+      setFrame((prev) => (prev + 1) % previewFrames.length);
     }, 1200);
     return () => {
       if (intervalRef.current) {
@@ -100,12 +88,7 @@ function FeaturedTile({
         intervalRef.current = null;
       }
     };
-  }, [hasPreview, previewList.length]);
-
-  useEffect(() => {
-    setPreviewFailed(false);
-    setFrame(0);
-  }, [previewList]);
+  }, [hasPreview, previewFrames]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -220,34 +203,17 @@ function FeaturedTile({
           )}
         </div>
       )}
-      {isVideo && !hasPreview ? (
-        <video
-          ref={videoRef}
-          className="featured-card__media"
-          src={getProxiedImageUrl(item.src)}
-          poster={getProxiedImageUrl(placeholder)}
-          muted
-          loop
-          playsInline
-          preload="metadata"
-          autoPlay
-        />
-      ) : isVideo ? (
-        <img
-          src={getProxiedImageUrl(src)}
-          alt=""
-          className="featured-card__media"
-          loading="lazy"
-          onError={() => setPreviewFailed(true)}
-        />
-      ) : (
-        <img
-          src={getProxiedImageUrl(src)}
-          alt=""
-          className="featured-card__media"
-          loading="lazy"
-        />
-      )}
+      <img
+        src={src}
+        alt=""
+        className="featured-card__media"
+        loading="lazy"
+        onError={
+          isVideo
+            ? () => setPreviewFailed(true)
+            : undefined
+        }
+      />
       <div className="featured-card__overlay">
         <div className="featured-card__meta featured-card__meta--overlay">
           <span
