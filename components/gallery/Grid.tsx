@@ -1,7 +1,7 @@
 "use client";
 import NextImage from "next/image";
 import type { MouseEvent as ReactMouseEvent } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import type { GalleryItem } from "./types";
 import { getFavorites, getWatchTimeMap, setFavorite } from "./prefs";
 import { formatDuration } from "./metrics";
@@ -538,18 +538,20 @@ function GalleryCard({
                   )}
                 </div>
               )}
-              <a
-                className="card-overlay__download card-overlay__download--icon-only"
-                href={getGalleryImageUrl(item.src)}
-                download={downloadName}
-                onClick={(e) => e.stopPropagation()}
-                aria-label={`Download ${name}`}
-              >
-                <DownloadGlyph
-                  className="card-overlay__download-icon"
-                  strokeWidth={1.8}
-                />
-              </a>
+              {item.type === "image" && (
+                <a
+                  className="card-overlay__download card-overlay__download--icon-only"
+                  href={getGalleryImageUrl(item.src)}
+                  download={downloadName}
+                  onClick={(e) => e.stopPropagation()}
+                  aria-label={`Download ${name}`}
+                >
+                  <DownloadGlyph
+                    className="card-overlay__download-icon"
+                    strokeWidth={1.8}
+                  />
+                </a>
+              )}
             </div>
           </div>
         </div>
@@ -615,20 +617,21 @@ function VideoThumb({ it, cover }: { it: GalleryItem; cover: string }) {
     );
   }, [previewAvailable, previewSources.length]);
 
-  useEffect(() => {
+  const handleVideoEnter = useCallback(() => {
     if (previewAvailable) return;
     const el = videoRef.current;
     if (!el) return;
-    const play = () => {
-      void el.play().catch(() => {
-        /* ignore autoplay restrictions */
-      });
-    };
-    play();
-    return () => {
-      el.pause();
-      el.currentTime = 0;
-    };
+    void el.play().catch(() => {
+      /* ignore autoplay restrictions */
+    });
+  }, [previewAvailable]);
+
+  const handleVideoLeave = useCallback(() => {
+    if (previewAvailable) return;
+    const el = videoRef.current;
+    if (!el) return;
+    el.pause();
+    el.currentTime = 0;
   }, [previewAvailable]);
 
   const activePreviewSrc = previewAvailable
@@ -636,7 +639,12 @@ function VideoThumb({ it, cover }: { it: GalleryItem; cover: string }) {
     : undefined;
 
   return (
-    <div ref={ref} className="video-thumb relative">
+    <div
+      ref={ref}
+      className="video-thumb relative"
+      onMouseEnter={handleVideoEnter}
+      onMouseLeave={handleVideoLeave}
+    >
       {previewAvailable ? (
         <NextImage
           src={activePreviewSrc ?? ""}

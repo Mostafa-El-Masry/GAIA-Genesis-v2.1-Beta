@@ -36,10 +36,10 @@ function ensureLocalPath(value: string | undefined, prefix: string) {
   if (/^(?:https?:|data:|blob:)/i.test(value)) return value;
   const clean = value.replace(/^\/+/, "");
   if (clean.startsWith(prefix)) return clean;
-  const parts = clean.split("/");
-  const filename = parts.pop();
-  if (!filename) return value;
-  return `${prefix}/${filename}`;
+  // If caller provided a path (contains slash), keep it as-is; CDN/base can apply.
+  if (clean.includes("/")) return clean;
+  // Bare filenames can be used directly; CDN base or rewrites will resolve them.
+  return clean;
 }
 
 function normalizeGalleryItem(item: GalleryItem): GalleryItem {
@@ -89,20 +89,26 @@ const FALLBACK_TAGS = ["personal", "exotic", "landscape", "portrait"];
 
 async function fetchManifest(): Promise<GalleryItem[]> {
   try {
-    const res = await fetch("/jsons/gallery-manifest.json", {
+    const res = await fetch(`/api/gallery/scan?ts=${Date.now()}`, {
       cache: "no-store",
     });
     if (res.ok) {
-      const json = await res.json();
-      if (Array.isArray(json.items))
-        return (json.items as GalleryItem[]).map(normalizeGalleryItem);
+      const json = (await res.json()) as ScanResp;
+      if (Array.isArray(json.items)) {
+        return json.items.map(normalizeGalleryItem);
+      }
     }
-  } catch {}
+  } catch {
+    /* ignore and fall back to static manifest */
+  }
 
-  const res = await fetch("/api/gallery/scan", { cache: "no-store" });
-  const js = (await res.json()) as ScanResp;
+  const res = await fetch("/jsons/gallery-manifest.json", {
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Unable to load gallery manifest");
+  const js = await res.json();
   return Array.isArray(js.items)
-    ? js.items.map(normalizeGalleryItem)
+    ? (js.items as GalleryItem[]).map(normalizeGalleryItem)
     : [];
 }
 

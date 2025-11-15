@@ -13,43 +13,60 @@ const connectSrc = [
 if (supabaseUrl) connectSrc.push(supabaseUrl);
 if (supabaseWsUrl) connectSrc.push(supabaseWsUrl);
 
+const galleryCdn =
+  process.env.NEXT_PUBLIC_IMG_CDN_BASE ||
+  "https://pub-3354a96a3d194a9c95c8e51e1b20944e.r2.dev";
+const previewCdn =
+  process.env.NEXT_PUBLIC_GAIA_PREVIEWS_URL ||
+  "https://pub-f962df99714e4baaac2e2c4a54a7b861.r2.dev";
+
+function hostFrom(url) {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return null;
+  }
+}
+
 const nextConfig = {
   reactStrictMode: true,
   experimental: {},
 
-  // ✅ single images block (no duplicates)
   images: {
     remotePatterns: [
       // gallery bucket (images)
       {
         protocol: "https",
-        hostname: "pub-3354a96a3d194a9c95c8e51e1b20944e.r2.dev",
+        hostname:
+          hostFrom(galleryCdn) ||
+          "pub-3354a96a3d194a9c95c8e51e1b20944e.r2.dev",
       },
       // previews bucket (video thumbnails/frames)
       {
         protocol: "https",
-        hostname: "pub-f962df99714e4baaac2e2c4a54a7b861.r2.dev",
+        hostname:
+          hostFrom(previewCdn) ||
+          "pub-f962df99714e4baaac2e2c4a54a7b861.r2.dev",
       },
     ],
   },
 
   // Optional: handy path aliases to your public R2 buckets
   async rewrites() {
+    const galleryBase = galleryCdn.replace(/\/$/, "");
+    const previewBase = previewCdn.replace(/\/$/, "");
     return [
       {
         source: "/img/:path*",
-        destination:
-          "https://pub-3354a96a3d194a9c95c8e51e1b20944e.r2.dev/:path*", // gallery
+        destination: `${galleryBase}/:path*`, // gallery
       },
       {
         source: "/media/images/:path*",
-        destination:
-          "https://pub-3354a96a3d194a9c95c8e51e1b20944e.r2.dev/:path*", // gallery
+        destination: `${galleryBase}/:path*`, // gallery
       },
       {
         source: "/media/previews/:path*",
-        destination:
-          "https://pub-f962df99714e4baaac2e2c4a54a7b861.r2.dev/:path*", // previews
+        destination: `${previewBase}/:path*`, // previews
       },
     ];
   },

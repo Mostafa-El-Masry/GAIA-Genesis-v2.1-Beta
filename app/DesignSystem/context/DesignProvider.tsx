@@ -149,6 +149,7 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(DEFAULT_THEME);
   const [button, setButton] = useState<ButtonStyle>("solid");
   const [search, setSearch] = useState<SearchStyle>("rounded");
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -161,6 +162,7 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
       setThemeState(initialTheme);
       setButton(read(BTN_KEY, "solid", VALID_BUTTONS));
       setSearch(read(SRCH_KEY, "rounded", VALID_SEARCHES));
+      setHydrated(true);
     })();
 
     return () => {
@@ -169,8 +171,9 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (!hydrated) return;
     persistTheme(theme);
-  }, [theme]);
+  }, [theme, hydrated]);
 
   useEffect(() => {
     write(BTN_KEY, button);

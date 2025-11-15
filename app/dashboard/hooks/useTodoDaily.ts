@@ -1,7 +1,8 @@
 // app/Dashboard/hooks/useTodoDaily.ts
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { shiftDate } from "@/utils/dates";
 
 export type Category = "life" | "work" | "distraction";
 
@@ -106,11 +107,19 @@ function rankCandidates(tasks: Task[]): Task[] {
 }
 function taskMatchesToday(t: Task, today: string): boolean {
   const hasRepeatToday = matchesRepeat(t.repeat, today);
-  const dueOkay = !!t.due_date && t.due_date <= today;
-  return (hasRepeatToday || dueOkay);
+  const dueToday = !!t.due_date && t.due_date === today;
+  return hasRepeatToday || dueToday;
 }
 
-export type SlotInfo = { task: Task | null; hasAlternate: boolean; candidatesCount: number; };
+export type SlotState = "pending" | "done" | "idle";
+
+export type SlotInfo = {
+  task: Task | null;
+  hasAlternate: boolean;
+  candidatesCount: number;
+  state: SlotState;
+  completedTitle?: string;
+};
 
 async function api<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, { ...init, headers: { "Content-Type": "application/json", ...(init?.headers||{}) } });
@@ -123,6 +132,7 @@ export function useTodoDaily() {
   const [storage, setStorage] = useState<StorageShape>(() => loadStorage());
   const [selection, setSelection] = useState<DailySelection>(() => loadSelection(getTodayInTZ(KUWAIT_TZ)));
   const tasks = storage.tasks;
+  const autoAdvanceRef = useRef<string | null>(null);
 
   // DB hydrate on mount
   useEffect(() => {
@@ -194,16 +204,37 @@ export function useTodoDaily() {
     return out;
   }, [byCategory, today]);
 
-  const slotInfo = useMemo<Record<Category, SlotInfo>>(()=>{
-    const info: any = {};
-    (["life","work","distraction"] as Category[]).forEach(c => {
+  const completedByCat = useMemo(() => {
+    const cats: Category[] = ["life", "work", "distraction"];
+    const map: Record<Category, Task | null> = { life: null, work: null, distraction: null };
+    cats.forEach((c) => {
+      map[c] = byCategory[c].find((t) => t.status_by_date?.[today] === "done") ?? null;
+    });
+    return map;
+  }, [byCategory, today]);
+
+  const slotInfo = useMemo<Record<Category, SlotInfo>>(() => {
+    const info: Record<Category, SlotInfo> = {
+      life: { task: null, hasAlternate: false, candidatesCount: 0, state: "idle" },
+      work: { task: null, hasAlternate: false, candidatesCount: 0, state: "idle" },
+      distraction: { task: null, hasAlternate: false, candidatesCount: 0, state: "idle" },
+    };
+    (["life", "work", "distraction"] as Category[]).forEach((c) => {
       const cands = candidatesByCat[c];
       const preferredId = selection.selected[c] ?? null;
-      const preferred = cands.find(t => t.id === preferredId) ?? cands[0] ?? null;
-      info[c] = { task: preferred ?? null, hasAlternate: preferred ? cands.some(t => t.id !== preferred.id) : false, candidatesCount: cands.length };
+      const preferred = cands.find((t) => t.id === preferredId) ?? cands[0] ?? null;
+      const completed = completedByCat[c];
+      const state: SlotState = preferred ? "pending" : completed ? "done" : "idle";
+      info[c] = {
+        task: preferred ?? null,
+        hasAlternate: preferred ? cands.some((t) => t.id !== preferred.id) : false,
+        candidatesCount: cands.length,
+        state,
+        completedTitle: completed?.title,
+      };
     });
     return info;
-  }, [candidatesByCat, selection]);
+  }, [candidatesByCat, selection, completedByCat]);
 
   const refresh = useCallback(()=>{
     setStorage(loadStorage());
@@ -221,30 +252,72 @@ export function useTodoDaily() {
   }, []);
 
   const addQuickTask = useCallback(async (category: Category, title: string, note?: string, priority: 1|2|3 = 2, pinned=false) => {
+    const today = getTodayInTZ(KUWAIT_TZ);
+    // find the next date (starting tomorrow) that has no task for this category
+    let targetDate = shiftDate(today, 1);
+    for (let i = 1; i < 365; i += 1) {
+      const candidate = shiftDate(today, i);
+      const exists = storage.tasks.some(
+        (t) => t.category === category && t.due_date === candidate
+      );
+      if (!exists) {
+        targetDate = candidate;
+        break;
+      }
+    }
+
     const base: Task = {
       id: uuid(),
-      category, title: title.trim(), note: note?.trim() || undefined,
-      priority, pinned,
-      due_date: getTodayInTZ(KUWAIT_TZ),
+      category,
+      title: title.trim(),
+      note: note?.trim() || undefined,
+      priority,
+      pinned,
+      due_date: targetDate,
       repeat: "none",
       created_at: safeNowISO(),
       updated_at: safeNowISO(),
       status_by_date: {},
     };
     // optimistic local insert
-    setStorage(prev => { const next = { ...prev, tasks: [...prev.tasks, base] }; saveStorage(next); return next; });
-    setSelection(prev => { const s: DailySelection = { date: getTodayInTZ(KUWAIT_TZ), selected: { ...prev.selected, [category]: base.id } }; saveSelection(s); return s; });
+    setStorage((prev) => {
+      const next = { ...prev, tasks: [...prev.tasks, base] };
+      saveStorage(next);
+      return next;
+    });
+    setSelection((prev) => {
+      const s: DailySelection = {
+        date: targetDate,
+        selected: { ...prev.selected, [category]: base.id },
+      };
+      saveSelection(s);
+      return s;
+    });
     // server insert
     try {
-      const res = await api<{task:any}>("/api/todo", { method: "POST", body: JSON.stringify({
-        category, title: base.title, note: base.note, priority, pinned, due_date: base.due_date, repeat: base.repeat
-      })});
+      const res = await api<{ task: any }>("/api/todo", {
+        method: "POST",
+        body: JSON.stringify({
+          category,
+          title: base.title,
+          note: base.note,
+          priority,
+          pinned,
+          due_date: base.due_date,
+          repeat: base.repeat,
+        }),
+      });
       // replace with server copy
-      replaceTask({ ...base, id: res.task.id, created_at: res.task.created_at, updated_at: res.task.updated_at });
-    } catch(e) {
+      replaceTask({
+        ...base,
+        id: res.task.id,
+        created_at: res.task.created_at,
+        updated_at: res.task.updated_at,
+      });
+    } catch (e) {
       console.warn("DB insert failed; staying local.", e);
     }
-  }, [replaceTask]);
+  }, [replaceTask, storage.tasks]);
 
   const markDone = useCallback(async (category: Category) => {
     const t = slotInfo[category].task; if (!t) return;
@@ -286,6 +359,22 @@ export function useTodoDaily() {
     try { await api(`/api/todo?id=${encodeURIComponent(taskId)}`, { method:"PATCH", body: JSON.stringify(patch) }); }
     catch(e){ console.warn("DB patch failed", e); }
   }, []);
+
+  useEffect(() => {
+    const cats: Category[] = ["life", "work", "distraction"];
+    const hasPending = cats.some((c) => slotInfo[c]?.state === "pending" && slotInfo[c]?.task);
+    if (hasPending) {
+      autoAdvanceRef.current = null;
+      return;
+    }
+    const hasCompleted = cats.some((c) => slotInfo[c]?.state === "done");
+    if (!hasCompleted) return;
+    if (autoAdvanceRef.current === today) return;
+    autoAdvanceRef.current = today;
+    const nextDay = shiftDate(today, 1);
+    setToday(nextDay);
+    setSelection(loadSelection(nextDay));
+  }, [slotInfo, today, setSelection, setToday]);
 
   return {
     today,

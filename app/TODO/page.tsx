@@ -3,6 +3,10 @@
 
 import { useMemo } from "react";
 import { useTodoDaily } from "../dashboard/hooks/useTodoDaily";
+import type { Task } from "../dashboard/hooks/useTodoDaily";
+
+type StatusTone = "pending" | "done" | "skipped";
+type StatusResolution = { label: string; tone: StatusTone; dateLabel: string };
 
 const LABELS: Record<string, string> = {
   life: "Life",
@@ -20,10 +24,36 @@ export default function TODOPage() {
   const { tasks, deleteTask } = useTodoDaily();
 
   const byCat = useMemo(() => {
-    const map: Record<string, any[]> = { life: [], work: [], distraction: [] };
+    const map: Record<string, Task[]> = { life: [], work: [], distraction: [] };
     for (const t of tasks) map[t.category].push(t);
     return map;
   }, [tasks]);
+
+  const resolveStatus = (task: Task): StatusResolution => {
+    const entries = Object.entries(task.status_by_date ?? {});
+    if (entries.length === 0) {
+      return {
+        label: "Pending",
+        tone: "pending",
+        dateLabel: task.due_date ?? "Unscheduled",
+      };
+    }
+    entries.sort((a, b) => b[0].localeCompare(a[0]));
+    const [date, status] = entries[0];
+    return {
+      label: status === "done" ? "Done" : "Skipped",
+      tone: status === "done" ? "done" : "skipped",
+      dateLabel: date,
+    };
+  };
+
+  const toneStyles: Record<StatusTone, string> = {
+    pending:
+      "bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-400/20 dark:text-amber-200 dark:border-amber-400/30",
+    done: "bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-400/20 dark:text-emerald-100 dark:border-emerald-400/30",
+    skipped:
+      "bg-slate-200 text-slate-700 border border-slate-300 dark:bg-slate-600/30 dark:text-slate-200 dark:border-slate-500",
+  };
 
   return (
     <main className="mx-auto max-w-4xl p-4">
@@ -60,11 +90,12 @@ export default function TODOPage() {
                         {t.note && (
                           <p className="text-sm text-base-content/70">{t.note}</p>
                         )}
-                        {t.repeat_rule && t.repeat_rule !== "none" && (
+                        {t.repeat && t.repeat !== "none" && (
                           <p className="mt-1 text-xs uppercase tracking-wide text-base-content/60">
-                            Repeats: {String(t.repeat_rule)}
+                            Repeats: {String(t.repeat)}
                           </p>
                         )}
+                        <StatusRow task={t} toneStyles={toneStyles} resolveStatus={resolveStatus} />
                       </div>
                       <div className="flex items-center gap-2">
                         <button
@@ -84,5 +115,30 @@ export default function TODOPage() {
         </section>
       ))}
     </main>
+  );
+}
+
+type StatusRowProps = {
+  task: Task;
+  toneStyles: Record<StatusTone, string>;
+  resolveStatus: (task: Task) => StatusResolution;
+};
+
+function StatusRow({ task, toneStyles, resolveStatus }: StatusRowProps) {
+  const status = resolveStatus(task);
+  return (
+    <div className="mt-2 flex flex-wrap gap-2 text-xs">
+      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-semibold ${toneStyles[status.tone]}`}>
+        Status: {status.label}
+      </span>
+      <span className="inline-flex items-center gap-1 rounded-full border border-base-300/60 px-2 py-0.5 text-base-content/70">
+        Date: {status.dateLabel}
+      </span>
+      {task.due_date && task.due_date !== status.dateLabel && (
+        <span className="inline-flex items-center gap-1 rounded-full border border-base-300/60 px-2 py-0.5 text-base-content/70">
+          Due: {task.due_date}
+        </span>
+      )}
+    </div>
   );
 }

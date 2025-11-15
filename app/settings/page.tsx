@@ -42,6 +42,19 @@ type ManifestResponse = {
 type TabId = "appearance" | "gallery" | "profiles" | "users";
 
 async function fetchGalleryManifest(): Promise<GalleryItem[]> {
+  // Prefer the live API scan so freshly added media shows up immediately.
+  try {
+    const live = await fetch(`/api/gallery/scan?ts=${Date.now()}`, {
+      cache: "no-store",
+    });
+    if (live.ok) {
+      const json = (await live.json()) as ManifestResponse;
+      if (Array.isArray(json.items)) return json.items;
+    }
+  } catch {
+    /* ignore API failure and fall through to static manifest */
+  }
+
   try {
     const res = await fetch("/jsons/gallery-manifest.json", {
       cache: "no-store",
@@ -51,15 +64,10 @@ async function fetchGalleryManifest(): Promise<GalleryItem[]> {
       if (Array.isArray(json.items)) return json.items;
     }
   } catch {
-    /* ignore network failures and fall through to API */
+    /* surface error below */
   }
 
-  const fallback = await fetch("/api/gallery/scan", { cache: "no-store" });
-  if (!fallback.ok) {
-    throw new Error(`Manifest request failed with status ${fallback.status}`);
-  }
-  const json = (await fallback.json()) as ManifestResponse;
-  return Array.isArray(json.items) ? json.items : [];
+  throw new Error("Unable to load gallery manifest.");
 }
 
 export default function SettingsPage() {

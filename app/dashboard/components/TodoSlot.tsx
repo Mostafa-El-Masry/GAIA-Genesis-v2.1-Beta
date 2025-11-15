@@ -11,16 +11,16 @@ import {
   SkipForward,
   Calendar,
 } from "lucide-react";
-import type { Category, Task } from "../hooks/useTodoDaily";
+import type { Category, SlotState, Task } from "../hooks/useTodoDaily";
 import TodoQuickAdd from "./TodoQuickAdd";
 
 type Props = {
   category: Category;
   task: Task | null;
-  hasAlternate: boolean;
+  state: SlotState;
+  completedTitle?: string;
   onDone: (c: Category) => void;
   onSkip: (c: Category) => void;
-  onNext: (c: Category) => void;
   onQuickAdd: (
     c: Category,
     title: string,
@@ -44,10 +44,10 @@ export default function TodoSlot(props: Props) {
   const {
     category,
     task,
-    hasAlternate,
+    state,
+    completedTitle,
     onDone,
     onSkip,
-    onNext,
     onQuickAdd,
     onDelete,
     onEdit,
@@ -57,7 +57,7 @@ export default function TodoSlot(props: Props) {
 
   return (
     <div
-      className={`rounded-xl border border-[var(--gaia-border)] bg-[var(--gaia-surface)] p-5 shadow-sm transition-all hover:shadow-md hover:border-[var(--gaia-border)] min-h-96 max-h-96 overflow-hidden `}
+      className={`rounded-xl border border-[var(--gaia-border)] bg-[var(--gaia-surface)] p-5 shadow-sm transition-all hover:shadow-md hover:border-[var(--gaia-border)] min-h-[18rem] overflow-hidden `}
     >
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -71,7 +71,7 @@ export default function TodoSlot(props: Props) {
         </div>
       </div>
 
-      {task ? (
+      {state === "pending" && task ? (
         <div className="flex flex-col h-full">
           <div className="mb-4 h-48">
             <div className="mb-3 line-clamp-2 text-lg font-bold text-[var(--gaia-text-strong)]">
@@ -89,36 +89,41 @@ export default function TodoSlot(props: Props) {
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
               <button
-                className="rounded-lg bg-[var(--gaia-negative)] px-3 py-2 font-semibold text-white transition-opacity hover:opacity-90"
+                className="rounded-lg border border-[var(--gaia-negative-border)] bg-[var(--gaia-negative-bg)] px-3 py-2 font-semibold text-[var(--gaia-negative)] transition-colors hover:bg-[var(--gaia-negative)] hover:text-white"
                 onClick={() => onDelete(task.id)}
                 title="Delete task"
               >
                 <Trash2 size={18} />
               </button>
               <button
-                className="flex-1 rounded-lg bg-[var(--gaia-warning)] px-3 py-2 font-semibold text-[#000] transition-opacity hover:opacity-90"
+                className="flex-1 rounded-lg border border-[var(--gaia-warning-border)] bg-[var(--gaia-warning-bg)] px-3 py-2 font-semibold text-[var(--gaia-warning)] transition-colors hover:bg-[var(--gaia-warning)] hover:text-[#000]"
                 onClick={() => onSkip(category)}
                 title="Skip this task"
               >
                 <SkipForward size={18} className="mx-auto" />
               </button>
               <button
-                className="flex-1 rounded-lg bg-[var(--gaia-positive)] px-3 py-2 font-semibold text-[#000] transition-opacity hover:opacity-90"
+                className="flex-1 rounded-lg border border-[var(--gaia-positive-border)] bg-[var(--gaia-positive-bg)] px-3 py-2 font-semibold text-[var(--gaia-positive)] transition-colors hover:bg-[var(--gaia-positive)] hover:text-white"
                 onClick={() => onDone(category)}
                 title="Mark as done"
               >
                 <Check size={18} className="mx-auto" />
               </button>
             </div>
-            {hasAlternate && (
-              <button
-                className="w-full rounded-lg border border-[var(--gaia-border)] px-3 py-2 font-semibold text-[var(--gaia-text-default)] transition-colors hover:bg-[var(--gaia-border)]"
-                onClick={() => onNext(category)}
-              >
-                Next ▸
-              </button>
-            )}
           </div>
+        </div>
+      ) : state === "done" ? (
+        <div className="flex min-h-12 mt-12 flex-col items-center justify-center rounded-xl border border-[var(--gaia-positive-border)] bg-[var(--gaia-positive-bg)]/40 px-4 py-6 text-center text-[var(--gaia-positive)]">
+          <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-[var(--gaia-positive-bg)] px-3 py-1 text-sm font-semibold">
+            <Check size={18} />
+            Done
+          </div>
+          <p className="text-lg font-semibold text-[var(--gaia-text-strong)]">
+            {completedTitle ?? "All done!"}
+          </p>
+          <p className="mt-2 text-sm text-[var(--gaia-text-muted)]">
+            We'll surface tomorrow's tasks automatically.
+          </p>
         </div>
       ) : (
         <div>

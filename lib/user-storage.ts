@@ -18,6 +18,7 @@ let activeUserId: string | null = null;
 let activeToken: string | null = null;
 let ready = false;
 let hydrating: Promise<void> | null = null;
+let proxyDisabled = false;
 
 const cache = new Map<string, string>();
 let realtimeChannel: RealtimeChannel | null = null;
@@ -102,7 +103,7 @@ async function fetchRows(
   const map = new Map<string, string>();
 
   try {
-    if (typeof fetch !== "undefined") {
+    if (typeof fetch !== "undefined" && !proxyDisabled) {
       const headers: Record<string, string> = {};
       if (token) headers["authorization"] = `Bearer ${token}`;
 
@@ -118,6 +119,7 @@ async function fetchRows(
       return map;
     }
   } catch (err) {
+    proxyDisabled = true;
     // If proxy fails, fall back to client Supabase call so the app remains functional.
     const errMsg = err instanceof Error ? err.message : String(err);
     console.warn(
@@ -267,7 +269,7 @@ async function persist(key: string, value: string | null) {
 
   // Try to use server proxy for persistence. If activeToken is not available
   // or the proxy fails, fall back to direct client Supabase call.
-  if (activeToken) {
+  if (activeToken && !proxyDisabled) {
     try {
       if (value === null) {
         const url = new URL("/api/user-storage", window.location.origin);
@@ -291,6 +293,7 @@ async function persist(key: string, value: string | null) {
       if (!res.ok) throw new Error(`upsert failed ${res.status}`);
       return;
     } catch (err) {
+      proxyDisabled = true;
       console.warn(
         "user-storage: server proxy persist failed, falling back to client supabase:",
         err
