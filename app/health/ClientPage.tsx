@@ -1,6 +1,7 @@
 'use client';
 
 import TodayQuick from './components/TodayQuick';
+import SummaryStrip from './components/SummaryStrip';
 import WeekView from './components/WeekView';
 import HabitList from './components/HabitList';
 import InsulinDrawer from './components/InsulinDrawer';
@@ -23,6 +24,7 @@ export default function HealthPage(){
             <button className="gaia-border gaia-surface rounded-lg px-3 py-1.5 text-sm font-semibold shadow-sm" onClick={()=>setInsulinOpen(true)}>Insulin</button>
           </div>
         </div>
+        <SummaryStrip />
         <TodayQuick />
         <WeekView />
         <HabitList />

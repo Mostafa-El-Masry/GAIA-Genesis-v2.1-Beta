@@ -146,7 +146,7 @@ export default function WealthLevels() {
 
       {/* Top summary and Levels displayed at the top of the page */}
       <div className="mb-8">
-        <WealthTopSummary />
+        <WealthTopSummary metrics={metrics} />
         <div className="relative bg-card p-3 rounded-md shadow-sm">
           <LevelsView metrics={metrics} />
         </div>

@@ -68,8 +68,9 @@ export default function ExportImport() {
       <header className="mb-2">
         <h2 className="text-lg font-extrabold tracking-wide">Export / Import</h2>
         <p className="gaia-muted text-sm">
-          Download a backup of your health data (photos are stored separately) or import a JSON
-          export to restore it.
+          Download a local backup of your health data (photos are stored separately) or import a
+          JSON export to restore it. Files stay on your device; GAIA never uploads this data
+          anywhere.
         </p>
       </header>
 
