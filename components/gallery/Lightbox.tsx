@@ -10,11 +10,9 @@ import {
 } from "./prefs";
 import { getDisplayName } from "./utils";
 import { getGalleryImageUrl } from "./imageUrl";
-import { getPreviewSources } from "./previews";
 
 const AUTOPLAY_DELAY_MS = 10000;
 const AUTOPLAY_TICK_MS = 100;
-const SWIPE_THRESHOLD = 50; // minimum pixels to trigger swipe
 
 export default function Lightbox({
   item,
@@ -46,51 +44,26 @@ export default function Lightbox({
   const autoAdvanceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Touch/swipe tracking
-  const touchStartXRef = useRef<number | null>(null);
-  const touchStartYRef = useRef<number | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const check = () => {
+      try {
+        setIsMobile(window.innerWidth < 640);
+      } catch {
+        setIsMobile(false);
+      }
+    };
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   // title editing state
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
-
-  // Handle touch start
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    touchStartXRef.current = e.touches[0].clientX;
-    touchStartYRef.current = e.touches[0].clientY;
-  }, []);
-
-  // Handle touch end (swipe detection)
-  const handleTouchEnd = useCallback(
-    (e: React.TouchEvent) => {
-      if (touchStartXRef.current === null || touchStartYRef.current === null)
-        return;
-      if (!item || item.type !== "image") return;
-
-      const endX = e.changedTouches[0].clientX;
-      const endY = e.changedTouches[0].clientY;
-      const deltaX = endX - touchStartXRef.current;
-      const deltaY = endY - touchStartYRef.current;
-
-      // Only trigger swipe if mostly horizontal movement
-      if (Math.abs(deltaY) > Math.abs(deltaX) / 2) {
-        return; // More vertical than horizontal, ignore
-      }
-
-      // Swipe right = go to previous
-      if (deltaX > SWIPE_THRESHOLD) {
-        onPrev();
-      }
-      // Swipe left = go to next
-      else if (deltaX < -SWIPE_THRESHOLD) {
-        onNext();
-      }
-
-      touchStartXRef.current = null;
-      touchStartYRef.current = null;
-    },
-    [item, onNext, onPrev]
-  );
 
   useEffect(() => {
     if (!item) {
@@ -317,14 +290,13 @@ export default function Lightbox({
         webkitExitFullscreen?: () => Promise<void> | void;
       };
       if (doc.fullscreenElement) {
-        const exit = doc.exitFullscreen ?? doc.webkitExitFullscreen;
+        const exit =
+          doc.exitFullscreen ??
+          doc.webkitExitFullscreen;
         if (exit) {
           try {
             const result = exit.call(doc);
-            if (
-              result &&
-              typeof (result as Promise<void>).catch === "function"
-            ) {
+            if (result && typeof (result as Promise<void>).catch === "function") {
               (result as Promise<void>).catch(() => {});
             }
           } catch {
@@ -359,7 +331,11 @@ export default function Lightbox({
       const target = event.target as HTMLElement | null;
       if (!target) return false;
       const tag = target.tagName;
-      return tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable;
+      return (
+        tag === "INPUT" ||
+        tag === "TEXTAREA" ||
+        target.isContentEditable
+      );
     };
 
     function onKey(e: KeyboardEvent) {
@@ -485,18 +461,41 @@ export default function Lightbox({
       className="lb-backdrop"
       onClick={onClose}
       onContextMenu={(e) => e.preventDefault()}
+      onTouchStart={(e) => {
+        if (!isMobile) return;
+        if (!e.touches || e.touches.length === 0) return;
+        const t = e.touches[0];
+        touchStartRef.current = { x: t.clientX, y: t.clientY };
+      }}
+      onTouchEnd={(e) => {
+        if (!isMobile) return;
+        const start = touchStartRef.current;
+        if (!start) return;
+        const t = e.changedTouches && e.changedTouches[0];
+        if (!t) return;
+        const dx = t.clientX - start.x;
+        const dy = t.clientY - start.y;
+        const absDx = Math.abs(dx);
+        const absDy = Math.abs(dy);
+        touchStartRef.current = null;
+        if (absDx < 40 || absDx < absDy) return;
+        if (dx < 0) {
+          onNext();
+        } else {
+          onPrev();
+        }
+      }}
     >
       {item.type === "image" ? (
         <img
           src={mediaSrc}
           alt=""
-          className="lb-media cursor-grab active:cursor-grabbing"
+          className="lb-media"
           onClick={(e) => {
+            if (isMobile) return;
             e.stopPropagation();
             onNext();
           }}
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
         />
       ) : (
         <video
@@ -548,9 +547,9 @@ export default function Lightbox({
               </div>
               <div className="lb-recommendations__options">
                 {suggestions.map(({ entry, idx }) => {
-                  const thumbSrc =
-                    getPreviewSources(entry)[0] ??
-                    getGalleryImageUrl("/media/video-placeholder.jpg");
+                  const thumbKey =
+                    entry.preview?.[0] ?? "/media/video-placeholder.jpg";
+                  const thumbSrc = getGalleryImageUrl(thumbKey);
                   const label = getDisplayName(entry.src, entry.id);
                   return (
                     <button
@@ -625,14 +624,15 @@ export default function Lightbox({
         </div>
       )}
 
-      <div className="lb-ui">
-        <button
+      {!isMobile && (
+        <div className="lb-ui">
+          <button
           aria-label="Prev"
           onClick={(e) => {
             e.stopPropagation();
             onPrev();
           }}
-          className="hidden sm:block gaia-contrast m-4 rounded px-3 py-2"
+          className="gaia-contrast m-4 rounded px-3 py-2"
         >
           ◀
         </button>
@@ -642,11 +642,12 @@ export default function Lightbox({
             e.stopPropagation();
             onNext();
           }}
-          className="hidden sm:block gaia-contrast m-4 rounded px-3 py-2"
+          className="gaia-contrast m-4 rounded px-3 py-2"
         >
           ▶
         </button>
-      </div>
+        </div>
+      )}
     </div>
   );
 }

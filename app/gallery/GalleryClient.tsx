@@ -36,10 +36,10 @@ function ensureLocalPath(value: string | undefined, prefix: string) {
   if (/^(?:https?:|data:|blob:)/i.test(value)) return value;
   const clean = value.replace(/^\/+/, "");
   if (clean.startsWith(prefix)) return clean;
-  // If caller provided a path (contains slash), keep it as-is; CDN/base can apply.
-  if (clean.includes("/")) return clean;
-  // Bare filenames can be used directly; CDN base or rewrites will resolve them.
-  return clean;
+  const parts = clean.split("/");
+  const filename = parts.pop();
+  if (!filename) return value;
+  return `${prefix}/${filename}`;
 }
 
 function normalizeGalleryItem(item: GalleryItem): GalleryItem {
@@ -89,26 +89,20 @@ const FALLBACK_TAGS = ["personal", "exotic", "landscape", "portrait"];
 
 async function fetchManifest(): Promise<GalleryItem[]> {
   try {
-    const res = await fetch(`/api/gallery/scan?ts=${Date.now()}`, {
+    const res = await fetch("/jsons/gallery-manifest.json", {
       cache: "no-store",
     });
     if (res.ok) {
-      const json = (await res.json()) as ScanResp;
-      if (Array.isArray(json.items)) {
-        return json.items.map(normalizeGalleryItem);
-      }
+      const json = await res.json();
+      if (Array.isArray(json.items))
+        return (json.items as GalleryItem[]).map(normalizeGalleryItem);
     }
-  } catch {
-    /* ignore and fall back to static manifest */
-  }
+  } catch {}
 
-  const res = await fetch("/jsons/gallery-manifest.json", {
-    cache: "no-store",
-  });
-  if (!res.ok) throw new Error("Unable to load gallery manifest");
-  const js = await res.json();
+  const res = await fetch("/api/gallery/scan", { cache: "no-store" });
+  const js = (await res.json()) as ScanResp;
   return Array.isArray(js.items)
-    ? (js.items as GalleryItem[]).map(normalizeGalleryItem)
+    ? js.items.map(normalizeGalleryItem)
     : [];
 }
 
@@ -451,24 +445,20 @@ export default function GalleryClient() {
       ? base.filter((i) => {
           if (i.type !== selectedItemType) return true;
           const ext = i.src.split(".").pop()?.toLowerCase();
-          return !!ext && categorySet.has(ext);
+          if (!ext) return true;
+          return categorySet.has(ext);
         })
       : base;
 
     const tagged = tagSet
       ? categorized.filter((i) => {
-          if (i.type !== selectedItemType) return true;
-          const tagsFromItem = Array.isArray(i.tags) ? i.tags : [];
-          const tagsFromMap = tagMap[i.id] ?? [];
-          const tagsFromAuto =
-            i.type === "video" ? videoAutoTags[i.id] ?? [] : [];
-          const tags = [...tagsFromItem, ...tagsFromMap, ...tagsFromAuto]
-            .map((t) => (t ? t.toLowerCase() : ""))
-            .filter(Boolean);
-          if (tags.some((t) => tagSet.has(t))) return true;
-          const slug = i.src.toLowerCase();
-          for (const selected of tagSet) {
-            if (slug.includes(selected)) return true;
+          const tags =
+            (i.type === "image"
+              ? tagMap[i.id]
+              : videoAutoTags[i.id] || tagMap[i.id]) || [];
+          if (!tags.length) return tagSet.has("untagged");
+          for (const tag of tags) {
+            if (tagSet.has(tag.toLowerCase())) return true;
           }
           return false;
         })
@@ -496,29 +486,55 @@ export default function GalleryClient() {
     videoAutoTags,
   ]);
 
+  // Stable lightbox order: capture the current filtered order once when opening.
+  const [sequenceIds, setSequenceIds] = useState<string[] | null>(null);
+
+  const itemsById = useMemo(() => {
+    const map: Record<string, GalleryItem> = {};
+    items.forEach((it) => {
+      map[it.id] = it;
+    });
+    return map;
+  }, [items]);
+
   const activeIndex = useMemo(() => {
-    if (!openId) return -1;
-    return filtered.findIndex((i) => i.id === openId);
-  }, [filtered, openId]);
+    if (!openId || !sequenceIds) return -1;
+    return sequenceIds.indexOf(openId);
+  }, [openId, sequenceIds]);
+
+  useEffect(() => {
+    if (!openId) {
+      if (sequenceIds !== null) setSequenceIds(null);
+      return;
+    }
+    if (!sequenceIds || sequenceIds.length === 0) {
+      // First open in this session – freeze the current filtered order.
+      const ids = filtered.map((i) => i.id);
+      setSequenceIds(ids);
+    }
+  }, [openId, filtered, sequenceIds]);
 
   function openAt(idx: number) {
-    const target = filtered[idx];
-    if (target) setOpenId(target.id);
+    const list = sequenceIds && sequenceIds.length
+      ? sequenceIds
+      : filtered.map((i) => i.id);
+    const targetId = list[idx];
+    if (targetId) setOpenId(targetId);
   }
   function close() {
     setOpenId(null);
   }
   function prev() {
-    if (activeIndex === -1 || filtered.length === 0) return;
-    const nextIndex = (activeIndex - 1 + filtered.length) % filtered.length;
-    const target = filtered[nextIndex];
-    if (target) setOpenId(target.id);
+    if (!sequenceIds || activeIndex === -1 || sequenceIds.length === 0) return;
+    const nextIndex = (activeIndex - 1 + sequenceIds.length) % sequenceIds.length;
+    const nextId = sequenceIds[nextIndex];
+    if (nextId) setOpenId(nextId);
   }
   function next() {
-    if (activeIndex === -1 || filtered.length === 0) return;
-    const nextIndex = (activeIndex + 1) % filtered.length;
-    const target = filtered[nextIndex];
-    if (target) setOpenId(target.id);
+    if (!sequenceIds || activeIndex === -1 || sequenceIds.length === 0) return;
+    const nextIndex = (activeIndex + 1) % sequenceIds.length;
+    const nextId = sequenceIds[nextIndex];
+    if (nextId) setOpenId(nextId);
   }
 
   function openFeatured(idx: number) {
@@ -537,6 +553,7 @@ export default function GalleryClient() {
       setPendingFeaturedId(selected.id);
     }
   }
+
 
   useEffect(() => {
     if (!pendingFeaturedId) return;
@@ -690,7 +707,7 @@ export default function GalleryClient() {
   }, []);
 
   return (
-    <main className="gallery-page">
+    <main className={`gallery-page gallery-page--${mode}`}>
       <div className="gallery-shell">
         <section className="gallery-hero">
           <div className="gallery-hero__copy">
@@ -910,9 +927,13 @@ export default function GalleryClient() {
 
       {/* pass Lightbox props as `any` spread to avoid prop-type mismatch in JSX inference */}
       {(() => {
+        const queueIds = sequenceIds && sequenceIds.length
+          ? sequenceIds
+          : filtered.map((i) => i.id);
+        const queue = queueIds.map((id) => itemsById[id]).filter(Boolean);
         const lbProps: any = {
-          item: activeIndex === -1 ? null : filtered[activeIndex],
-          queue: filtered,
+          item: activeIndex === -1 ? null : queue[activeIndex] ?? null,
+          queue,
           currentIndex: activeIndex,
           onClose: close,
           onPrev: prev,

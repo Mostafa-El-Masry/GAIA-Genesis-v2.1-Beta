@@ -1,7 +1,11 @@
 "use client";
 
-import type { Session, RealtimeChannel } from "@supabase/supabase-js";
-import { supabase } from "./supabase";
+import type {
+  Session,
+  RealtimeChannel,
+  SupabaseClient,
+} from "@supabase/supabase-js";
+import { getSupabaseClient, isSupabaseConfigured } from "./supabase";
 
 export type StorageEventDetail = {
   key: string;
@@ -24,6 +28,16 @@ const cache = new Map<string, string>();
 let realtimeChannel: RealtimeChannel | null = null;
 const readyListeners = new Set<ReadyListener>();
 const storageListeners = new Set<StorageListener>();
+
+function resolveSupabaseClient(): SupabaseClient | null {
+  if (!isSupabaseConfigured) return null;
+  try {
+    return getSupabaseClient();
+  } catch (error) {
+    console.warn("user-storage: Supabase client unavailable:", error);
+    return null;
+  }
+}
 
 function emit(detail: StorageEventDetail) {
   storageListeners.forEach((listener) => {
@@ -128,6 +142,14 @@ async function fetchRows(
     );
   }
 
+  const supabase = resolveSupabaseClient();
+  if (!supabase) {
+    console.warn(
+      "user-storage: Supabase client not configured; continuing with empty storage fallback."
+    );
+    return map;
+  }
+
   try {
     const result = await supabase
       .from(STORAGE_TABLE)
@@ -180,7 +202,10 @@ function emitClear() {
 
 function cleanupRealtimeSubscription() {
   if (realtimeChannel) {
-    void supabase.removeChannel(realtimeChannel);
+    const supabase = resolveSupabaseClient();
+    if (supabase) {
+      void supabase.removeChannel(realtimeChannel);
+    }
     realtimeChannel = null;
   }
 }
@@ -188,6 +213,14 @@ function cleanupRealtimeSubscription() {
 function subscribeToRealtime(userId: string) {
   if (realtimeChannel) {
     cleanupRealtimeSubscription();
+  }
+
+  const supabase = resolveSupabaseClient();
+  if (!supabase) {
+    console.warn(
+      "user-storage: Supabase client unavailable; realtime sync disabled."
+    );
+    return;
   }
 
   realtimeChannel = supabase
@@ -302,6 +335,14 @@ async function persist(key: string, value: string | null) {
   }
 
   // fallback to client-side Supabase direct call
+  const supabase = resolveSupabaseClient();
+  if (!supabase) {
+    console.warn(
+      "user-storage: Supabase client unavailable; skipping direct persistence."
+    );
+    return;
+  }
+
   if (value === null) {
     const { error } = await supabase
       .from(STORAGE_TABLE)

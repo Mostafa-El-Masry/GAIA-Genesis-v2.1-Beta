@@ -4,7 +4,10 @@ import { useCallback, useTransition } from "react";
 
 import { endSession } from "@/app/auth/login/actions";
 import { recordUserLogout } from "@/lib/auth-client";
-import { supabase } from "@/lib/supabase";
+import {
+  getSupabaseClient,
+  isSupabaseConfigured,
+} from "@/lib/supabase";
 
 type LogoutButtonProps = {
   className?: string;
@@ -23,7 +26,10 @@ export default function LogoutButton({
     recordUserLogout();
     startTransition(async () => {
       try {
-        await supabase.auth.signOut();
+        if (isSupabaseConfigured) {
+          const client = getSupabaseClient();
+          await client.auth.signOut();
+        }
       } catch {
         // ignore sign-out failures; we'll still clear local state
       }

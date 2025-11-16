@@ -5,7 +5,10 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 
 import { sanitizeRedirect } from "@/lib/auth";
 import { recordUserLogin } from "@/lib/auth-client";
-import { supabase } from "@/lib/supabase";
+import {
+  getSupabaseClient,
+  isSupabaseConfigured,
+} from "@/lib/supabase";
 
 type SubmitStatus = {
   type: "idle" | "info" | "error" | "success";
@@ -38,6 +41,14 @@ export default function LoginPage() {
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
       if (isSubmitting) return;
+      if (!isSupabaseConfigured) {
+        setSubmitStatus({
+          type: "error",
+          message:
+            "Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.",
+        });
+        return;
+      }
 
       const form = event.currentTarget;
       const formData = new FormData(form);
@@ -70,6 +81,7 @@ export default function LoginPage() {
 
       try {
         let sessionToken: string | null = null;
+        const supabase = getSupabaseClient();
 
         if (mode === "signup") {
           const { data, error } = await supabase.auth.signUp({

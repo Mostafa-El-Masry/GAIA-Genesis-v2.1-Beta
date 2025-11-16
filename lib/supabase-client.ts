@@ -5,27 +5,46 @@
  * Handles session management and JWT token refresh.
  */
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
-    "Missing Supabase environment variables: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY"
-  );
+export const isSupabaseClientConfigured = Boolean(
+  supabaseUrl && supabaseAnonKey
+);
+
+let supabaseClient: SupabaseClient | null = null;
+
+function getSupabaseBrowserClient(): SupabaseClient {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error(
+      "Missing Supabase environment variables: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY"
+    );
+  }
+
+  if (!supabaseClient) {
+    supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+  }
+
+  return supabaseClient;
 }
 
-export const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+if (isSupabaseClientConfigured) {
+  supabaseClient = getSupabaseBrowserClient();
+}
+
+export { supabaseClient, getSupabaseBrowserClient };
 
 /**
  * Get current authenticated user from session
  * @returns User object or null if not authenticated
  */
 export async function getAuthenticatedUser() {
+  const client = getSupabaseBrowserClient();
   const {
     data: { user },
-  } = await supabaseClient.auth.getUser();
+  } = await client.auth.getUser();
   return user;
 }
 
@@ -34,9 +53,10 @@ export async function getAuthenticatedUser() {
  * @returns Session object or null if not authenticated
  */
 export async function getSession() {
+  const client = getSupabaseBrowserClient();
   const {
     data: { session },
-  } = await supabaseClient.auth.getSession();
+  } = await client.auth.getSession();
   return session;
 }
 
@@ -44,7 +64,8 @@ export async function getSession() {
  * Sign in with email and password
  */
 export async function signInWithPassword(email: string, password: string) {
-  return await supabaseClient.auth.signInWithPassword({
+  const client = getSupabaseBrowserClient();
+  return await client.auth.signInWithPassword({
     email,
     password,
   });
@@ -54,7 +75,8 @@ export async function signInWithPassword(email: string, password: string) {
  * Sign up new user with email and password
  */
 export async function signUpWithPassword(email: string, password: string) {
-  return await supabaseClient.auth.signUp({
+  const client = getSupabaseBrowserClient();
+  return await client.auth.signUp({
     email,
     password,
   });
@@ -64,7 +86,8 @@ export async function signUpWithPassword(email: string, password: string) {
  * Sign out current user
  */
 export async function signOut() {
-  return await supabaseClient.auth.signOut();
+  const client = getSupabaseBrowserClient();
+  return await client.auth.signOut();
 }
 
 /**
@@ -77,6 +100,7 @@ export async function authenticatedFetch(
   url: string,
   options: RequestInit = {}
 ) {
+  const client = getSupabaseBrowserClient();
   const session = await getSession();
 
   if (!session) {
@@ -162,9 +186,10 @@ export async function fetchStock(locationId?: string, productId?: string) {
 export function onAuthStateChange(
   callback: (event: string, session: any) => void
 ) {
+  const client = getSupabaseBrowserClient();
   const {
     data: { subscription },
-  } = supabaseClient.auth.onAuthStateChange(callback);
+  } = client.auth.onAuthStateChange(callback);
 
   return subscription;
 }

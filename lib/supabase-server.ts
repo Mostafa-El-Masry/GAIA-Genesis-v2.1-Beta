@@ -5,21 +5,32 @@
  * Handles database queries and authentication
  */
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  throw new Error("Missing Supabase environment variables");
+let supabase: SupabaseClient | null = null;
+if (supabaseUrl && supabaseServiceKey) {
+  supabase = createClient(supabaseUrl, supabaseServiceKey);
 }
 
-export const supabase = createClient(supabaseUrl, supabaseServiceKey);
+export function getSupabaseClient(): SupabaseClient {
+  if (!supabase) {
+    throw new Error(
+      "Supabase environment variables are missing. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY."
+    );
+  }
+  return supabase;
+}
+
+export { supabase };
 
 /**
  * Get the authenticated user from session
  */
 export async function getAuthUser(req: any) {
+  const client = getSupabaseClient();
   const authHeader = req.headers.get("authorization");
   if (!authHeader) {
     throw new Error("No authorization header");
@@ -29,7 +40,7 @@ export async function getAuthUser(req: any) {
   const {
     data: { user },
     error,
-  } = await supabase.auth.getUser(token);
+  } = await client.auth.getUser(token);
 
   if (error || !user) {
     throw new Error("Unauthorized");
@@ -46,7 +57,8 @@ export async function queryWithUserIsolation(
   userId: string,
   filters?: Record<string, any>
 ) {
-  let query = supabase.from(table).select("*").eq("user_id", userId);
+  const client = getSupabaseClient();
+  let query = client.from(table).select("*").eq("user_id", userId);
 
   if (filters) {
     Object.entries(filters).forEach(([key, value]) => {
@@ -63,7 +75,8 @@ export async function queryWithUserIsolation(
  * Helper to insert data
  */
 export async function insertData(table: string, data: any) {
-  const { data: result, error } = await supabase
+  const client = getSupabaseClient();
+  const { data: result, error } = await client
     .from(table)
     .insert([data])
     .select();
@@ -76,7 +89,8 @@ export async function insertData(table: string, data: any) {
  * Helper to update data
  */
 export async function updateData(table: string, id: string, updates: any) {
-  const { data, error } = await supabase
+  const client = getSupabaseClient();
+  const { data, error } = await client
     .from(table)
     .update(updates)
     .eq("id", id)
@@ -90,7 +104,8 @@ export async function updateData(table: string, id: string, updates: any) {
  * Helper to delete data (soft delete)
  */
 export async function softDelete(table: string, id: string) {
-  const { data, error } = await supabase
+  const client = getSupabaseClient();
+  const { data, error } = await client
     .from(table)
     .update({ is_active: false, updated_at: new Date().toISOString() })
     .eq("id", id)
@@ -104,7 +119,8 @@ export async function softDelete(table: string, id: string) {
  * Helper to hard delete data
  */
 export async function hardDelete(table: string, id: string) {
-  const { error } = await supabase.from(table).delete().eq("id", id);
+  const client = getSupabaseClient();
+  const { error } = await client.from(table).delete().eq("id", id);
 
   if (error) throw error;
   return { success: true };

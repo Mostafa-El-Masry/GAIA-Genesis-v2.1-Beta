@@ -3,7 +3,10 @@
 import { useEffect } from "react";
 
 import { ensureAuthFromSupabaseSession } from "@/lib/auth-client";
-import { supabase } from "@/lib/supabase";
+import {
+  getSupabaseClient,
+  isSupabaseConfigured,
+} from "@/lib/supabase";
 import { hydrateUserStorage } from "@/lib/user-storage";
 
 /**
@@ -16,8 +19,16 @@ export default function AuthHydrator() {
     let cancelled = false;
 
     async function hydrate() {
+      if (!isSupabaseConfigured) {
+        console.warn(
+          "Supabase environment variables are missing. Skipping auth hydration."
+        );
+        return;
+      }
+
       try {
-        const { data, error } = await supabase.auth.getSession();
+        const client = getSupabaseClient();
+        const { data, error } = await client.auth.getSession();
         if (cancelled) return;
         if (error) {
           console.error("Failed to read Supabase session:", error);
@@ -33,7 +44,9 @@ export default function AuthHydrator() {
 
     hydrate();
 
-    const { data: listener } = supabase.auth.onAuthStateChange(
+    if (!isSupabaseConfigured) return () => undefined;
+    const client = getSupabaseClient();
+    const { data: listener } = client.auth.onAuthStateChange(
       (_event, session) => {
         ensureAuthFromSupabaseSession(session);
         void hydrateUserStorage(session);

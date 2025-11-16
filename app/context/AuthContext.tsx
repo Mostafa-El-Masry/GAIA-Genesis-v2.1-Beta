@@ -1,7 +1,11 @@
 "use client";
 
 import React, { useContext, useEffect, useState, ReactNode } from "react";
-import { supabaseClient, onAuthStateChange } from "@/lib/supabase-client";
+import {
+  getSupabaseBrowserClient,
+  isSupabaseClientConfigured,
+  onAuthStateChange,
+} from "@/lib/supabase-client";
 
 interface AuthContextType {
   user: any;
@@ -20,14 +24,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   useEffect(() => {
     // Get initial user
-    supabaseClient.auth.getUser().then(({ data, error }) => {
-      if (error) {
-        setError(error.message);
-      } else {
-        setUser(data.user);
-      }
+    if (!isSupabaseClientConfigured) {
+      setError(
+        "Supabase client is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY."
+      );
       setLoading(false);
-    });
+      return;
+    }
+
+    getSupabaseBrowserClient()
+      .auth.getUser()
+      .then(({ data, error }) => {
+        if (error) {
+          setError(error.message);
+        } else {
+          setUser(data.user);
+        }
+        setLoading(false);
+      });
 
     // Subscribe to auth changes
     const subscription = onAuthStateChange((event, session) => {

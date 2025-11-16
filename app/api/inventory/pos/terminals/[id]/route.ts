@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase, getAuthUser } from "@/lib/supabase-server";
+import { getAuthUser, getSupabaseClient } from "@/lib/supabase-server";
 
 interface POSTerminal {
   id: string;
@@ -25,6 +25,7 @@ export async function GET(
 
     const { id } = await params;
 
+    const supabase = getSupabaseClient();
     const { data, error } = await supabase
       .from("pos_terminals")
       .select("*")
@@ -61,6 +62,7 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
+    const supabase = getSupabaseClient();
 
     // Verify ownership
     const { data: existing, error: fetchError } = await supabase
@@ -129,6 +131,7 @@ export async function DELETE(
     }
 
     const { id } = await params;
+    const supabase = getSupabaseClient();
 
     // Verify ownership
     const { data: existing, error: fetchError } = await supabase
