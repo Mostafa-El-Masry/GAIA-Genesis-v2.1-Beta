@@ -3,12 +3,16 @@
 import React from 'react';
 import { useDesign } from '../context/DesignProvider';
 
-type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & { children: React.ReactNode };
+type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  children: React.ReactNode;
+  size?: 'sm' | 'md';
+};
 
-export default function Button({ className = '', children, ...rest }: Props) {
+export default function Button({ className = '', size = 'md', children, ...rest }: Props) {
   const { button, theme } = useDesign();
 
-  const base = 'inline-flex items-center justify-center rounded-md px-3 py-2 text-sm transition focus:outline-none gaia-focus';
+  const base = 'inline-flex items-center justify-center rounded-md transition focus:outline-none gaia-focus';
+  const sizing = size === 'sm' ? 'px-2.5 py-1.5 text-xs' : 'px-3 py-2 text-sm';
   let style = '';
 
   if (button === 'solid') {
@@ -20,7 +24,7 @@ export default function Button({ className = '', children, ...rest }: Props) {
   }
 
   return (
-    <button className={`${base} ${style} ${className}`} {...rest}>
+    <button className={`${base} ${sizing} ${style} ${className}`} {...rest}>
       {children}
     </button>
   );
