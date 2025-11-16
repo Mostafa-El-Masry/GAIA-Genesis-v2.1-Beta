@@ -4,7 +4,7 @@ export const routes: SiteEntry[] = [
   { path: "/", title: "Home" },
   { path: "/dashboard", title: "Dashboard" },
   { path: "/apollo", title: "Apollo" },
-  { path: "/Labs", title: "Labs (builds)" },
+  { path: "/apollo/labs", title: "Labs (builds)" },
   { path: "/ELEUTHIA", title: "ELEUTHIA (vault)" },
   { path: "/ELEUTHIA/Backups", title: "Backups" },
   { path: "/Gallery", title: "Gallery" },

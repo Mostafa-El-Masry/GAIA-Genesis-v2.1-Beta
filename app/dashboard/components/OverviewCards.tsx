@@ -107,7 +107,7 @@ export default function OverviewCards(){
         <div className="mt-1 text-sm opacity-80">{(data?.wealthSnapshot ?? 0).toLocaleString()}</div>
       </a>
 
-      <a href="/labs" className="gaia-panel rounded-xl border p-4 shadow-sm">
+      <a href="/apollo/labs" className="gaia-panel rounded-xl border p-4 shadow-sm">
         <div className="text-sm gaia-muted">Labs</div>
         <div className="mt-1 text-2xl font-extrabold">Last</div>
         <div className="mt-1 text-sm opacity-80 truncate">{data?.latestLabs?.key || '—'}</div>

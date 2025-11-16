@@ -3,7 +3,7 @@ export const devRoutes: RouteInfo[] = [
   { path: "/", note: "Home" },
   { path: "/dashboard" },
   { path: "/apollo", note: "Apollo" },
-  { path: "/Labs" },
+  { path: "/apollo/labs" },
   { path: "/Gallery" },
   { path: "/Timeline" },
   { path: "/Health" },

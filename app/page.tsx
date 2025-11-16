@@ -33,7 +33,6 @@ export default function HomePage() {
     { href: "/timeline", label: "Timeline", permission: "timeline" },
     { href: "/health", label: "Health", permission: "health" },
     { href: "/wealth", label: "Wealth", permission: "wealth" },
-    { href: "/labs", label: "Labs", permission: "labs" },
     { href: "/dashboard", label: "Dashboard", permission: "dashboard" },
     // Archives moved under Apollo; remove from main intro links
     { href: "/settings", label: "Settings", permission: "settings" },

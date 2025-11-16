@@ -18,7 +18,6 @@ export default function Intro() {
   ];
   const right = [
     { href: "/wealth", label: "Wealth" },
-    { href: "/labs", label: "Labs" },
     { href: "/dashboard", label: "Dashboard" },
     { href: "/interlog", label: "Intro" },
   ];

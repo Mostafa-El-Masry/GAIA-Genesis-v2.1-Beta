@@ -1,54 +1,56 @@
-'use client';
+"use client";
 
-type BuildEntry = {
-  conceptId: string;
-  nodeId: string;
-  trackId: string;
-  trackTitle: string;
-  title: string;
-  note: string;
-  embedUrl?: string;
-  score?: number;
-  total?: number;
-  completedAt?: number;
+import type { BuildEntry } from "../lib/labs";
+
+type Props = {
+  b: BuildEntry;
 };
 
-export default function BuildCard({ b }: { b: BuildEntry }) {
+export default function BuildCard({ b }: Props) {
+  const hasEmbed = Boolean(b.embedUrl);
+
   return (
-    <article className="rounded-lg border gaia-border p-4">
-      <header className="flex items-center justify-between">
+    <article className="gaia-panel gaia-border rounded-lg border p-4 shadow-sm flex flex-col gap-3">
+      <header className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-xs gaia-muted">{b.trackTitle}</div>
+          <p className="text-[11px] uppercase tracking-wide gaia-muted">
+            {b.trackTitle} - {b.trackId}
+          </p>
           <h3 className="text-lg font-semibold">{b.title}</h3>
+          <p className="text-xs gaia-muted">
+            Concept {b.conceptId} - Node {b.nodeId}
+          </p>
         </div>
         {typeof b.score === "number" && typeof b.total === "number" && (
-          <div className="text-xs gaia-muted">Score {b.score}/{b.total}</div>
+          <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+            {b.score}/{b.total}
+          </span>
         )}
       </header>
 
-      {b.embedUrl ? (
-        <div className="mt-3 overflow-hidden rounded border gaia-border">
-          <div className="aspect-video w-full">
-            <iframe
-              src={b.embedUrl}
-              className="h-full w-full"
-              allowFullScreen
-              loading="lazy"
-              referrerPolicy="no-referrer"
-              title={b.title}
-            />
-          </div>
-        </div>
-      ) : (
-        <p className="mt-3 whitespace-pre-wrap text-sm gaia-text-default">{b.note || "No notes provided."}</p>
+      {b.note && (
+        <p className="text-sm leading-relaxed whitespace-pre-wrap gaia-muted">
+          {b.note}
+        </p>
       )}
 
-      <footer className="mt-3 text-xs gaia-muted">
-        {b.completedAt ? new Date(b.completedAt).toLocaleString() : "Unsubmitted draft"}
-        {b.embedUrl && (
-          <a className="ml-3 underline hover:no-underline" href={b.embedUrl} target="_blank" rel="noreferrer">Open</a>
-        )}
-      </footer>
+      {hasEmbed && (
+        <div className="overflow-hidden rounded-lg border gaia-border">
+          <iframe
+            src={b.embedUrl}
+            title={b.title}
+            className="w-full aspect-video border-0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      )}
+
+      {b.completedAt && (
+        <p className="text-xs gaia-muted">
+          Completed {new Date(b.completedAt).toLocaleString()}
+        </p>
+      )}
     </article>
   );
 }

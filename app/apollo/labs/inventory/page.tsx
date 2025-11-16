@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * app/labs/inventory/page.tsx
+ * app/apollo/labs/inventory/page.tsx
  *
  * Main inventory dashboard
  * Shows: 8 locations, 8 POS terminals status, key metrics
@@ -90,13 +90,22 @@ export default function InventoryDashboard() {
         (t: POSTerminal) => t.is_active
       ).length;
 
+      const locationCount = (locData.data || []).length;
+      const terminalCount = (termData.data || []).length;
+
+      // Simple lab-mode metrics so the dashboard never feels &quot;dead&quot;.
+      // These are illustrative, not real accounting numbers.
+      const estimatedLowStock = Math.max(locationCount * 2, activeCount); // e.g. a couple of items per location
+      const estimatedSalesToday = activeCount * 150; // pretend each active terminal did ~150 KD in sales
+      const estimatedProfitToday = Math.round(estimatedSalesToday * 0.3); // 30% margin
+
       setStats({
-        totalLocations: (locData.data || []).length,
-        totalPOSTerminals: (termData.data || []).length,
+        totalLocations: locationCount,
+        totalPOSTerminals: terminalCount,
         activeTerminals: activeCount,
-        lowStockItems: 0, // TODO: Calculate from stock data
-        todaySales: 0, // TODO: Calculate from sales data
-        todayProfit: 0, // TODO: Calculate from cost accounting
+        lowStockItems: estimatedLowStock,
+        todaySales: estimatedSalesToday,
+        todayProfit: estimatedProfitToday,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load dashboard");
@@ -122,6 +131,9 @@ export default function InventoryDashboard() {
         </h1>
         <p className="text-gray-600">
           Manage products, locations, stock levels, and POS terminals
+        </p>
+        <p className="mt-2 inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
+          ⚗️ Labs build · metrics are illustrative and for experimentation only.
         </p>
       </div>
 
@@ -171,7 +183,7 @@ export default function InventoryDashboard() {
       {/* Navigation Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <Link
-          href="/labs/inventory/locations"
+          href="/apollo/labs/inventory/locations"
           className="p-4 bg-white rounded-lg shadow hover:shadow-md transition border-l-4 border-blue-500"
         >
           <h3 className="font-semibold text-gray-900 mb-1">Locations</h3>
@@ -181,7 +193,7 @@ export default function InventoryDashboard() {
         </Link>
 
         <Link
-          href="/labs/inventory/products"
+          href="/apollo/labs/inventory/products"
           className="p-4 bg-white rounded-lg shadow hover:shadow-md transition border-l-4 border-green-500"
         >
           <h3 className="font-semibold text-gray-900 mb-1">Products</h3>
@@ -189,7 +201,7 @@ export default function InventoryDashboard() {
         </Link>
 
         <Link
-          href="/labs/inventory/stock"
+          href="/apollo/labs/inventory/stock"
           className="p-4 bg-white rounded-lg shadow hover:shadow-md transition border-l-4 border-yellow-500"
         >
           <h3 className="font-semibold text-gray-900 mb-1">Stock Levels</h3>
@@ -197,7 +209,7 @@ export default function InventoryDashboard() {
         </Link>
 
         <Link
-          href="/labs/inventory/pos"
+          href="/apollo/labs/inventory/pos"
           className="p-4 bg-white rounded-lg shadow hover:shadow-md transition border-l-4 border-purple-500"
         >
           <h3 className="font-semibold text-gray-900 mb-1">POS Terminals</h3>
@@ -207,7 +219,7 @@ export default function InventoryDashboard() {
         </Link>
 
         <Link
-          href="/labs/inventory/accounting"
+          href="/apollo/labs/inventory/accounting"
           className="p-4 bg-white rounded-lg shadow hover:shadow-md transition border-l-4 border-red-500"
         >
           <h3 className="font-semibold text-gray-900 mb-1">Cost Accounting</h3>
@@ -215,7 +227,7 @@ export default function InventoryDashboard() {
         </Link>
 
         <Link
-          href="/labs/inventory/sales"
+          href="/apollo/labs/inventory/sales"
           className="p-4 bg-white rounded-lg shadow hover:shadow-md transition border-l-4 border-indigo-500"
         >
           <h3 className="font-semibold text-gray-900 mb-1">Sales Reports</h3>

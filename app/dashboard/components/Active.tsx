@@ -77,7 +77,7 @@ export default function Active() {
       accent: "from-info/20 via-transparent to-transparent",
     },
     {
-      href: "/Labs",
+      href: "/apollo/labs",
       eyebrow: "Labs builds",
       value: buildCount,
       helper: "completed concepts",

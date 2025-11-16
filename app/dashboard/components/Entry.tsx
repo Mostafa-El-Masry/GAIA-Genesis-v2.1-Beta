@@ -14,7 +14,7 @@ const entries = [
   {
     title: "Review builds",
     desc: "Private embeds, annotations, and build timelines.",
-    href: "/Labs",
+    href: "/apollo/labs",
     action: "Open Labs",
     tag: "Labs",
     accent: "from-warning/20 via-transparent to-transparent",

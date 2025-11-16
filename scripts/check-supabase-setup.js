@@ -73,7 +73,7 @@ const requiredFiles = [
   "lib/supabase-server.ts",
   "app/context/AuthContext.tsx",
   "app/auth/login/page.tsx",
-  "app/labs/inventory/page.tsx",
+  "app/apollo/labs/inventory/page.tsx",
 ];
 
 requiredFiles.forEach((file) => {
