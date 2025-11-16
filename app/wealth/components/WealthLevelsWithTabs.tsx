@@ -151,7 +151,7 @@ export default function WealthLevels() {
 
       {/* Top summary is always visible */}
       <div className="mb-8">
-        <WealthTopSummary />
+        <WealthTopSummary metrics={metrics} />
       </div>
 
       {/* Tab Navigation */}
